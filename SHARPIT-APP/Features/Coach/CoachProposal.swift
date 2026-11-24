@@ -204,7 +204,7 @@ nonisolated struct CoachProposal: Equatable, Identifiable {
         if let sport = input["type"]?.string.flatMap({ sportLabels[$0] }) { parts.append(sport) }
         if let duration = minutes(input["durationMin"]) { parts.append(duration) }
         if let intensity = intensity(input["intensity"]) { parts.append(intensity) }
-        if case .number(let load) = input["load"] { parts.append("charge \(Int(load.rounded()))") }
+        if case .number(let load) = input["load"] { parts.append(String(localized: "charge \(Int(load.rounded()))")) }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 

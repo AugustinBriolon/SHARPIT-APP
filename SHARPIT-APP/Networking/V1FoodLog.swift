@@ -15,7 +15,7 @@ nonisolated enum FoodLogMeal: String, CaseIterable, Codable, Sendable, Identifia
 
     var label: String {
         switch self {
-        case .breakfast: "Petit-déjeuner"
+        case .breakfast: String(localized: "Petit-déjeuner")
         case .lunch: String(localized: "Déjeuner")
         case .dinner: String(localized: "Dîner")
         case .snacks: String(localized: "Collations")

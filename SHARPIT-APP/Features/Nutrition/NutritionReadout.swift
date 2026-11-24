@@ -195,7 +195,7 @@ enum NutritionReadout {
                 goals: V1NutritionGoals(calories: line, protein: macro, carbohydrates: macro, fat: macro, exerciseCalories: 300, calorieBudget: 2_700),
                 fuelDensity: nil,
                 meals: [
-                    V1NutritionMeal(name: "breakfast", label: "Petit-déjeuner", calories: 520, protein: 25, carbs: 70, fat: 14, entries: []),
+                    V1NutritionMeal(name: "breakfast", label: String(localized: "Petit-déjeuner"), calories: 520, protein: 25, carbs: 70, fat: 14, entries: []),
                     V1NutritionMeal(name: "lunch", label: String(localized: "Déjeuner"), calories: 780, protein: 40, carbs: 90, fat: 25, entries: []),
                 ]
             )

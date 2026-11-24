@@ -215,6 +215,38 @@
         }
       }
     },
+    "6 h 05 en moyenne sur 7 jours, sous ton besoin de 7 h 30." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "6 h 05 on average over 7 days, under your 7 h 30 need."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "6 h 05 en moyenne sur 7 jours, sous ton besoin de 7 h 30."
+          }
+        }
+      }
+    },
+    "6 × 1000 m au seuil" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "6 × 1000 m at threshold"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "6 × 1000 m au seuil"
+          }
+        }
+      }
+    },
     "—" : {
       "localizations" : {
         "en" : {
@@ -3911,6 +3943,22 @@
         }
       }
     },
+    "%lldᵉ séance" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Session %lld"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lldᵉ séance"
+          }
+        }
+      }
+    },
     "%lld′" : {
       "localizations" : {
         "en" : {
@@ -5024,6 +5072,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "3 jours"
+          }
+        }
+      }
+    },
+    "32 minutes au-dessus de ton habitude." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "32 minutes above your usual."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "32 minutes au-dessus de ton habitude."
           }
         }
       }
@@ -10743,6 +10807,22 @@
         }
       }
     },
+    "Bloc" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Block"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bloc"
+          }
+        }
+      }
+    },
     "Bluetooth indisponible" : {
       "localizations" : {
         "en" : {
@@ -13261,6 +13341,22 @@
         }
       }
     },
+    "Charge optimale" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Optimal load"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Charge optimale"
+          }
+        }
+      }
+    },
     "Charge par semaine" : {
       "localizations" : {
         "en" : {
@@ -14888,6 +14984,22 @@
         }
       }
     },
+    "Comment était ma nuit ?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How was my night?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comment était ma nuit ?"
+          }
+        }
+      }
+    },
     "Comparaison prévu et réalisé" : {
       "localizations" : {
         "en" : {
@@ -14932,6 +15044,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Compétition"
+          }
+        }
+      }
+    },
+    "Complètes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Complete"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Complètes"
           }
         }
       }
@@ -16351,6 +16479,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Course"
+          }
+        }
+      }
+    },
+    "Course · Sortie longue" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Run · Long run"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Course · Sortie longue"
+          }
+        }
+      }
+    },
+    "Course · Tempo 3 × 10 min" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Run · Tempo 3 × 10 min"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Course · Tempo 3 × 10 min"
           }
         }
       }
@@ -21136,6 +21296,38 @@
         }
       }
     },
+    "Endurance 1 h 45" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Endurance 1 h 45"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Endurance 1 h 45"
+          }
+        }
+      }
+    },
+    "Endurance 2 000 m" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Endurance 2,000 m"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Endurance 2 000 m"
+          }
+        }
+      }
+    },
     "Enregistre ton ressenti du matin" : {
       "localizations" : {
         "en" : {
@@ -21891,6 +22083,22 @@
         }
       }
     },
+    "Équilibre normal" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Normal balance"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Équilibre normal"
+          }
+        }
+      }
+    },
     "Étape" : {
       "localizations" : {
         "en" : {
@@ -22160,6 +22368,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Évolution de la douleur"
+          }
+        }
+      }
+    },
+    "Et pour jeudi, je fais quoi ?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What should I do on Thursday?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Et pour jeudi, je fais quoi ?"
+          }
+        }
+      }
+    },
+    "Et si je n’ai que 45 min ?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What if I only have 45 min?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Et si je n’ai que 45 min ?"
           }
         }
       }
@@ -23341,6 +23581,22 @@
         }
       }
     },
+    "Footing" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Easy run"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Footing"
+          }
+        }
+      }
+    },
     "Force" : {
       "localizations" : {
         "en" : {
@@ -23820,6 +24076,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "g"
+          }
+        }
+      }
+    },
+    "Gainage" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Core"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gainage"
           }
         }
       }
@@ -26642,6 +26914,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Je ne peux pas m'entraîner "
+          }
+        }
+      }
+    },
+    "Je peux la faire sur home trainer ?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can I do it on the trainer?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Je peux la faire sur home trainer ?"
           }
         }
       }
@@ -30645,6 +30933,22 @@
         }
       }
     },
+    "Lisbonne" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lisbon"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lisbonne"
+          }
+        }
+      }
+    },
     "Lit partagé" : {
       "localizations" : {
         "en" : {
@@ -33263,6 +33567,22 @@
         }
       }
     },
+    "Natation · Technique 2 400 m" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Swim · Technique 2,400 m"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Natation · Technique 2 400 m"
+          }
+        }
+      }
+    },
     "Natation · semaine" : {
       "localizations" : {
         "en" : {
@@ -34410,6 +34730,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nuit trop courte"
+          }
+        }
+      }
+    },
+    "Nuits courtes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Short nights"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nuits courtes"
           }
         }
       }
@@ -37272,6 +37608,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pèse sur le plan"
+          }
+        }
+      }
+    },
+    "Petit-déjeuner" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Breakfast"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Petit-déjeuner"
           }
         }
       }
@@ -40606,6 +40958,22 @@
         }
       }
     },
+    "Récupération correcte" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fair recovery"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Récupération correcte"
+          }
+        }
+      }
+    },
     "Récupération et mobilité ciblée." : {
       "localizations" : {
         "en" : {
@@ -41054,6 +41422,22 @@
         }
       }
     },
+    "Régulier, pas plus vite au dernier." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steady, no faster on the last one."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Régulier, pas plus vite au dernier."
+          }
+        }
+      }
+    },
     "Régulier, sans gêne" : {
       "localizations" : {
         "en" : {
@@ -41132,6 +41516,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Relance l'app pour le refaire."
+          }
+        }
+      }
+    },
+    "Relever ton seuil à six semaines du semi, sur des jambes fraîches." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lift your threshold six weeks out from the half, on fresh legs."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Relever ton seuil à six semaines du semi, sur des jambes fraîches."
           }
         }
       }
@@ -45753,6 +46153,22 @@
         }
       }
     },
+    "Seuil 3 × 12 min" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Threshold 3 × 12 min"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seuil 3 × 12 min"
+          }
+        }
+      }
+    },
     "Seuil 3 × 8 min" : {
       "localizations" : {
         "en" : {
@@ -45781,6 +46197,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Seuil 40 min"
+          }
+        }
+      }
+    },
+    "Seuil 5 × 3 min" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Threshold 5 × 3 min"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seuil 5 × 3 min"
           }
         }
       }
@@ -46625,6 +47057,22 @@
         }
       }
     },
+    "Sommeil profond" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deep sleep"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sommeil profond"
+          }
+        }
+      }
+    },
     "Sommeil suffisant" : {
       "localizations" : {
         "en" : {
@@ -46685,6 +47133,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sommeil, VFC et fréquence cardiaque, depuis ta montre."
+          }
+        }
+      }
+    },
+    "Sortie longue" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Long run"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sortie longue"
           }
         }
       }
@@ -48273,6 +48737,22 @@
         }
       }
     },
+    "Ta VFC est revenue dans ta moyenne : on remet un peu d'intensité avant le week-end long." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your HRV is back in your range: we add a little intensity before the long weekend."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ta VFC est revenue dans ta moyenne : on remet un peu d'intensité avant le week-end long."
+          }
+        }
+      }
+    },
     "Ta balance" : {
       "localizations" : {
         "en" : {
@@ -48449,6 +48929,22 @@
         }
       }
     },
+    "Ta meilleure nuit de la semaine." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your best night of the week."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ta meilleure nuit de la semaine."
+          }
+        }
+      }
+    },
     "Ta montre" : {
       "localizations" : {
         "en" : {
@@ -48510,6 +49006,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ta nuit propose d'alléger"
+          }
+        }
+      }
+    },
+    "Ta nuit était courte, 6 h 10, et ta VFC est sous ta moyenne de la semaine. Rien d'alarmant, mais c'est un signal à écouter avant une séance intense. Voici ce que je te propose pour aujourd'hui. D'abord, garde la sortie vélo mais en endurance fondamentale : 75 minutes en zone 2, sans chercher la puissance. Ensuite, décale le travail au seuil à jeudi, quand ta fraîcheur sera remontée. Ton TSB est à moins 12 : tu as de la marge, mais pas assez pour enchaîner deux jours durs. Pense à t'hydrater, surtout avec la chaleur annoncée cet après-midi. Si tes jambes répondent bien après 30 minutes, tu peux ajouter trois accélérations de 20 secondes, pas plus. Et ce soir, vise un coucher avant 23 h : une bonne nuit fera plus pour ta forme de jeudi que n'importe quelle séance. Pour la suite de la semaine, on garde le plan : seuil jeudi, repos vendredi, sortie longue samedi. Je reverrai tout ça demain matin avec ta nuit." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your night was short, 6 h 10, and your HRV is below your weekly average. Nothing alarming, but it's a signal to listen to before a hard session. Here's what I suggest for today. First, keep the bike ride but at easy endurance: 75 minutes in zone 2, without chasing power. Then move the threshold work to Thursday, when your freshness is back. Your TSB is at minus 12: you have some room, but not enough to string two hard days together. Drink well, especially with the heat forecast this afternoon. If your legs feel good after 30 minutes, you can add three 20-second pickups, no more. And tonight, aim for bed before 11 pm: a good night will do more for Thursday's form than any session. For the rest of the week, we keep the plan: threshold Thursday, rest Friday, long ride Saturday. I'll look at it all again tomorrow morning with your night."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ta nuit était courte, 6 h 10, et ta VFC est sous ta moyenne de la semaine. Rien d'alarmant, mais c'est un signal à écouter avant une séance intense. Voici ce que je te propose pour aujourd'hui. D'abord, garde la sortie vélo mais en endurance fondamentale : 75 minutes en zone 2, sans chercher la puissance. Ensuite, décale le travail au seuil à jeudi, quand ta fraîcheur sera remontée. Ton TSB est à moins 12 : tu as de la marge, mais pas assez pour enchaîner deux jours durs. Pense à t'hydrater, surtout avec la chaleur annoncée cet après-midi. Si tes jambes répondent bien après 30 minutes, tu peux ajouter trois accélérations de 20 secondes, pas plus. Et ce soir, vise un coucher avant 23 h : une bonne nuit fera plus pour ta forme de jeudi que n'importe quelle séance. Pour la suite de la semaine, on garde le plan : seuil jeudi, repos vendredi, sortie longue samedi. Je reverrai tout ça demain matin avec ta nuit."
           }
         }
       }
@@ -49013,6 +49525,22 @@
         }
       }
     },
+    "Technique 2 400 m" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Technique 2,400 m"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Technique 2 400 m"
+          }
+        }
+      }
+    },
     "Tempo" : {
       "localizations" : {
         "en" : {
@@ -49025,6 +49553,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tempo"
+          }
+        }
+      }
+    },
+    "Tempo 3 × 10 min" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tempo 3 × 10 min"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tempo 3 × 10 min"
           }
         }
       }
@@ -50321,6 +50865,22 @@
         }
       }
     },
+    "Ton corps a encaissé hier, pas complètement. Le sommeil est ce qui te limite." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your body absorbed yesterday, not completely. Sleep is what's holding you back."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ton corps a encaissé hier, pas complètement. Le sommeil est ce qui te limite."
+          }
+        }
+      }
+    },
     "Ton corps est prêt pour une séance légère." : {
       "localizations" : {
         "en" : {
@@ -50430,6 +50990,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ton matériel"
+          }
+        }
+      }
+    },
+    "Ton mollet gauche était sensible mardi : arrête au moindre pincement." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your left calf was sore on Tuesday: stop at the first twinge."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ton mollet gauche était sensible mardi : arrête au moindre pincement."
           }
         }
       }
@@ -53287,6 +53863,22 @@
         }
       }
     },
+    "Vacances" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Holidays"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vacances"
+          }
+        }
+      }
+    },
     "Valeur" : {
       "localizations" : {
         "en" : {
@@ -53540,6 +54132,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vélo"
+          }
+        }
+      }
+    },
+    "Vélo · Seuil 2 × 12 min" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bike · Threshold 2 × 12 min"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vélo · Seuil 2 × 12 min"
           }
         }
       }

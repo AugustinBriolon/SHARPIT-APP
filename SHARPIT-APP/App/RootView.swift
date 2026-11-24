@@ -56,7 +56,7 @@ struct RootView: View {
                 )
                 .sharpitRegularColumn()
             } label: {
-                SharpitTabLabel("Résumé", systemImage: "house")
+                SharpitTabLabel(String(localized: "Résumé"), systemImage: "house")
             }
             Tab(value: ShellTab.plan) {
                 PlanView(

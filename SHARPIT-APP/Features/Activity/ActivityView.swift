@@ -587,7 +587,7 @@ enum ActivityFormat {
     /// `formatTrainingLoad` does.
     static func trainingLoad(_ load: Double, isExpertReading: Bool) -> String {
         let rounded = Int(exactly: load.rounded()) ?? 0
-        return isExpertReading ? "\(rounded) TSS" : "charge \(rounded)"
+        return isExpertReading ? "\(rounded) TSS" : String(localized: "charge \(rounded)")
     }
 
     static func primaryMetric(_ activity: V1ActivityListItem) -> String? {
