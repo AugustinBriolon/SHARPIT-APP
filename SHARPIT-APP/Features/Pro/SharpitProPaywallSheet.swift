@@ -130,9 +130,10 @@ struct SharpitProPaywallSheet: View {
                     planCard(
                         monthly,
                         title: String(localized: "Mensuel"),
-                        price: String(localized: "\(introOffer.displayPrice) le 1er mois"),
+                        price: String(localized: "\(introOffer.displayPrice) / mois"),
                         detail: String(localized: "puis \(monthly.displayPrice) / mois"),
-                        badge: ProPriceReadout.percentOff(full: monthly.price, paid: introOffer.price)
+                        badge: ProPriceReadout.percentOff(full: monthly.price, paid: introOffer.price),
+                        badgeContext: String(localized: "1er mois")
                     )
                 } else {
                     planCard(
@@ -160,7 +161,16 @@ struct SharpitProPaywallSheet: View {
         }
     }
 
-    private func planCard(_ product: Product, title: String, price: String, detail: String, badge: Int?) -> some View {
+    /// `badgeContext` says what the saving applies to (« 1er mois ») in the pill, so the price can
+    /// read as a monthly price and the offer's length still sits right beside it (App Review 3.1.2).
+    private func planCard(
+        _ product: Product,
+        title: String,
+        price: String,
+        detail: String,
+        badge: Int?,
+        badgeContext: String? = nil
+    ) -> some View {
         let isSelected = selectedProductId == product.id
         let shape = RoundedRectangle(cornerRadius: 20, style: .continuous)
         return Button {
@@ -187,7 +197,10 @@ struct SharpitProPaywallSheet: View {
                         .foregroundStyle(SharpitColor.foreground)
                         .multilineTextAlignment(.trailing)
                     if let badge {
-                        CliniqueStatusPill(String(localized: "− \(badge) %"), status: .good)
+                        CliniqueStatusPill(
+                            [badgeContext, String(localized: "− \(badge) %")].compactMap { $0 }.joined(separator: " "),
+                            status: .good
+                        )
                     }
                 }
             }

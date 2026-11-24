@@ -4,6 +4,86 @@
     "" : {
 
     },
+    "Où, et depuis quand ?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Where, and since when?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Où, et depuis quand ?"
+          }
+        }
+      }
+    },
+    "Qu'est-ce qui change cette semaine ?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What changes this week?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qu'est-ce qui change cette semaine ?"
+          }
+        }
+      }
+    },
+    "Que veux-tu changer à ta séance ?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What do you want to change in your session?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Que veux-tu changer à ta séance ?"
+          }
+        }
+      }
+    },
+    "Quels jours, et pourquoi ?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Which days, and why?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quels jours, et pourquoi ?"
+          }
+        }
+      }
+    },
+    "Ta question sur ton alimentation" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your question about your eating"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ta question sur ton alimentation"
+          }
+        }
+      }
+    },
     "\n\nTon abonnement SharpIt Pro continue de se renouveler : supprimer ton compte ne l'arrête pas. Annule-le d'abord pour ne plus être facturé." : {
       "localizations" : {
         "en" : {
@@ -1842,22 +1922,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ La source principale fait foi ; les autres complètent ce qui lui manque."
-          }
-        }
-      }
-    },
-    "%@ le 1er mois" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ the first month"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ le 1er mois"
           }
         }
       }
@@ -4476,6 +4540,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "1 an"
+          }
+        }
+      }
+    },
+    "1er mois" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1st month"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1er mois"
           }
         }
       }
