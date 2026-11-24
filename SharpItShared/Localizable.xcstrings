@@ -4119,22 +4119,6 @@
         }
       }
     },
-    "© Gym visual — gymvisual.com" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "© Gym visual — gymvisual.com"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "© Gym visual — gymvisual.com"
-          }
-        }
-      }
-    },
     "+ %lld autre%@" : {
       "localizations" : {
         "en" : {
@@ -56550,22 +56534,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sommeil, poids, volume et régularité sur ton écran d'accueil"
-          }
-        }
-      }
-    },
-    "Les nouveautés chez toi avant tout le monde" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "New features on your iPhone before everyone else"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Les nouveautés chez toi avant tout le monde"
           }
         }
       }

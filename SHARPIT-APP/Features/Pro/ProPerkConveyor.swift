@@ -20,7 +20,6 @@ nonisolated struct ProPerkLine: Identifiable, Equatable, Sendable {
         ProPerkLine(id: "biological-age", symbol: "heart", pillar: .sleep, sentence: String(localized: "Ton âge biologique, estimé depuis ta VO₂max")),
         ProPerkLine(id: "watch-push", symbol: "applewatch", pillar: .recovery, sentence: String(localized: "Tes séances de course, vélo et natation envoyées sur ta montre Garmin")),
         ProPerkLine(id: "extra-widgets", symbol: "square.grid.2x2", pillar: .sleep, sentence: String(localized: "Sommeil, poids, volume et régularité sur ton écran d'accueil")),
-        ProPerkLine(id: "early-access", symbol: "clock.badge.checkmark", pillar: .coach, sentence: String(localized: "Les nouveautés chez toi avant tout le monde")),
         ProPerkLine(id: "support", symbol: "hand.raised", pillar: .nutrition, sentence: String(localized: "SharpIt sans publicité ni revente de données, grâce à toi")),
     ]
 }

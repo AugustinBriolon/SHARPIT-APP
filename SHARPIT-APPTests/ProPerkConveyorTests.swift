@@ -4,10 +4,10 @@ import Testing
 
 @Test func thePaywallListsEverythingProAddsOnce() {
     let perks = ProPerkLine.all
-    // The eleven perks the server lists (`pro-perks.ts`), each under its id.
+    // The ten perks the server lists (`pro-perks.ts`), each under its id.
     #expect(perks.map(\.id) == [
         "coach", "adaptive-plan", "weekly-review", "session-analysis", "journal-coach-read",
-        "nutrition-reading", "biological-age", "watch-push", "extra-widgets", "early-access", "support",
+        "nutrition-reading", "biological-age", "watch-push", "extra-widgets", "support",
     ])
     #expect(Set(perks.map(\.symbol)).count == perks.count)
     #expect(perks.allSatisfy { !$0.sentence.isEmpty })

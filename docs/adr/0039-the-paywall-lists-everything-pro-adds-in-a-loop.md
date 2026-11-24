@@ -58,3 +58,6 @@ and a half lines (`ProPerkConveyor`).
   scrolled from its title or its plans.
 - A perk added on the server must be added to `ProPerkLine.all`; a test pins the eleven ids.
 - The four titled lines of the mock-up (`docs/adr/0035`) are gone from the paywall.
+- « Accès anticipé » was the eleventh perk. Nothing in the app delivered it, and a paywall that
+  sells what the app does not offer is refused (App Review 2.3.1), so it was taken out of the
+  server's list and of `ProPerkLine.all` on 2026-11-25: the list is ten lines.

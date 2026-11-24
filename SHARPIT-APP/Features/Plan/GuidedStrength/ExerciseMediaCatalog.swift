@@ -2,7 +2,8 @@ import Foundation
 
 /// CDN media for the exercises-dataset catalog (same IDs / aliases as the web app).
 enum ExerciseMediaCatalog {
-    static let attribution = String(localized: "© Gym visual — gymvisual.com")
+    /// The notice the pictures must carry wherever they are shown (the dataset's `NOTICE.md`).
+    static let attribution = "© Gym visual — https://gymvisual.com/"
 
     private static let cdnRoot = "https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@main"
 

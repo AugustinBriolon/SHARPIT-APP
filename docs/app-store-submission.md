@@ -44,23 +44,25 @@ Mirrors `Config/SharpitPro.storekit`. The product ids are fixed in code (`Sharpi
 Review screenshot of the paywall: Paramètres › SharpIt Pro on a free account.
 
 **The paywall sells what the app does** (guidelines 2.3.1, 3.1.2(c)). Since 2026-11-24 it lists the
-eleven perks of `pro-perks.ts`, one sentence each (`ProPerkLine.all`). Checked against the app on
+perks of `pro-perks.ts`, one sentence each (`ProPerkLine.all`). Checked against the app on
 2026-11-25:
 
 - « Envoi vers la montre » exists for a Garmin watch and for run, ride and swim sessions only
   (`WatchPushState.canSend`); the sentence says so.
-- « Accès anticipé » has no mechanism in the app: nothing reaches a Pro athlete earlier than a free
-  one. Either give it one, or take the perk out of `pro-perks.ts` and `ProPerkLine.all` before a
-  submission.
+- « Accès anticipé » had no mechanism in the app: it was removed from `pro-perks.ts`, the help
+  article and `ProPerkLine.all` on 2026-11-25. The list is ten perks.
 - The paywall changed on 2026-11-24: the review screenshot of the subscription in App Store Connect
   and the App Store screenshots that show the paywall or the Coach tab are to be shot again.
 
 ## Open before the next submission
 
-- **Exercise pictures (guideline 5.2.1).** They are Gym Visual's, hotlinked from a third-party
-  mirror, with no licence on record (`docs/adr/0037`). Since 2026-11-24 the picker lists the whole
-  catalog, about 1,300 pictures. Buy the licence and self-host, or replace the source, before
-  submitting. The attribution line (`ExerciseMediaCatalog.attribution`) is defined and shown nowhere.
+- **Exercise pictures (guideline 5.2.1).** They are Gym Visual's. The dataset they come from
+  (`hasaneyldrm/exercises-dataset`) is MIT for its data only: its `LICENSE` and `NOTICE.md` say the
+  media stay Gym Visual's, are redistributed there with a written permission of its own, at 180×180
+  with the notice « © Gym visual — https://gymvisual.com/ », and that cloning the repository grants
+  no licence to the media. Read on 2026-11-25. The app shows the notice under each
+  animation, and under the picker's list since that day; a licence from Gym Visual in SharpIt's
+  name is still not on record.
 
 ## Localization (App Store Connect)
 

@@ -117,7 +117,14 @@ struct ExercisePickerSheet: View {
                         }
                     }
                     .padding(.horizontal, 24)
-                    .padding(.bottom, SharpitSpacing.lg)
+                    .padding(.bottom, SharpitSpacing.xs)
+                    // The pictures are Gym Visual's: their notice stands under the list that shows them.
+                    Text(ExerciseMediaCatalog.attribution)
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.slate)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, SharpitSpacing.lg)
                 }
                 .scrollDismissesKeyboard(.interactively)
                 .overlay(alignment: .trailing) {

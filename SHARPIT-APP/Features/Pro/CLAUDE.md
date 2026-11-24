@@ -33,7 +33,7 @@ feature's name over the Pro pill, what it does in a sentence, « Essayer Pro » 
 coach's tone. It states no price: only the paywall quotes the App Store's.
 
 **Everything Pro adds, in a loop (`docs/adr/0039`, the athlete's request, 2026-11-24).** This replaces
-the four lines and the sub-paragraph described above. Under the title the paywall shows the eleven
+the four lines and the sub-paragraph described above. Under the title the paywall shows the ten
 perks (`ProPerkLine.all`, the server's ids, a glyph in a pillar's hue and one sentence each) as a
 column rising without end in a window of four and a half lines (`ProPerkConveyor`); a finger laid on
 it holds it and moves it either way, and two seconds after it leaves the rise eases back in. Plain list under Reduce Motion, at the accessibility sizes and for
