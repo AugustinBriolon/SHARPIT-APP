@@ -13,15 +13,15 @@ struct CoachContextTag: View {
 
     var body: some View {
         HStack(spacing: SharpitSpacing.xs) {
+            // Clinique: a plain slate glyph. The ink disc with its lime clip was the earlier brand's.
             Image(systemName: "paperclip")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(SharpitColor.inkAccent)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(SharpitColor.slate)
                 .frame(width: 24, height: 24)
-                .background(SharpitColor.inkSurface, in: Circle())
                 .accessibilityHidden(true)
 
             Text(context.label)
-                .font(SharpitTypography.bodyEmphasis)
+                .font(SharpitTypography.body)
                 .foregroundStyle(SharpitColor.foreground)
                 .lineLimit(1)
 

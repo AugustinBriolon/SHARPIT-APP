@@ -8,6 +8,9 @@ enum CoachQuickAction: CaseIterable, Identifiable {
 
     var id: Self { self }
 
+    /// The three offered on an empty thread; the « + » keeps them all.
+    static let suggested: [CoachQuickAction] = [.adjustWeek, .adjustSession, .tiredOrHurt]
+
     var label: String {
         switch self {
         case .adjustWeek: String(localized: "Ajuster ma semaine")

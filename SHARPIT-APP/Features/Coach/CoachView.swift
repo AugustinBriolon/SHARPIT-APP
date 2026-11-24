@@ -204,7 +204,7 @@ struct CoachView: View {
             // was scrolled to whenever a row it had not laid out changed.
             VStack(alignment: .leading, spacing: SharpitSpacing.md) {
                 if store.isEmpty {
-                    CoachEmptyState(onPick: start)
+                    CoachEmptyState()
                 }
                 ForEach(turns.earlier) { message in
                     messageRow(message)
@@ -398,6 +398,12 @@ struct CoachView: View {
         }
     }
 
+    /// Only while nothing is said or being said: an empty thread, an empty field, nothing joined.
+    private var showsSuggestions: Bool {
+        store.isEmpty && store.draft.isEmpty && store.pendingContext == nil
+            && !showsQuickActions && !dictation.isListening
+    }
+
     private var showsQuotaNotice: Bool {
         store.quota.flatMap { CoachQuotaReadout.line($0) } != nil
     }
@@ -420,6 +426,11 @@ struct CoachView: View {
             if showsQuickActions, !dictation.isListening {
                 quickActionsPanel
             }
+            if showsSuggestions {
+                // An empty thread stays bare: three ways in, low, where the thumb is. No rules, no card.
+                CoachQuickActionList(actions: CoachQuickAction.suggested, showsDividers: false, onPick: start, inset: SharpitSpacing.xs)
+                    .transition(.opacity)
+            }
 
             SharpitGlassGroup { composerBox }
 
@@ -431,6 +442,7 @@ struct CoachView: View {
         .padding(.top, SharpitSpacing.xs)
         .padding(.bottom, SharpitSpacing.sm)
         .animation(SharpitMotion.reveal, value: composerIsExpanded)
+        .animation(SharpitMotion.fade, value: showsSuggestions)
         .animation(SharpitMotion.reveal, value: dictation.isListening)
         // The budget line fades in when an answer takes the budget past half — never as the
         // page opens, and a subject is animated only by the tap that sets or drops it.
@@ -479,16 +491,14 @@ struct CoachView: View {
                 }
                 .padding(.vertical, SharpitSpacing.xs + 2)
                 .frame(minHeight: Self.controlHeight)
-                .padding(.leading, expanded || store.isEmpty ? SharpitSpacing.sm : Self.controlHeight)
-                .padding(.trailing, expanded ? SharpitSpacing.sm : Self.controlHeight)
+                .padding(.horizontal, expanded ? SharpitSpacing.sm : Self.controlHeight)
                 .padding(.bottom, expanded ? Self.controlHeight : 0)
                 .animation(SharpitMotion.selection, value: store.draft.count / 40)
                 .submitLabel(.send)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .overlay(alignment: .bottomLeading) {
-            // An empty thread already lays the starting points on the page.
-            if dictation.isListening { listeningMark } else if !store.isEmpty { quickActionsButton }
+            if dictation.isListening { listeningMark } else { quickActionsButton }
         }
         .overlay(alignment: .bottomTrailing) { composerButton }
         .padding(6)
@@ -931,40 +941,39 @@ nonisolated enum CoachSegment: Identifiable, Equatable {
     }
 }
 
-/// An empty conversation offers where to start: the same starting points as the « + », laid on
-/// the page, so the first question is one tap and a few words away.
 private struct CoachEmptyState: View {
-    let onPick: (CoachQuickAction) -> Void
-
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
             Text("Demande ce que tu veux comprendre")
                 .font(SharpitTypography.sectionTitle)
                 .tracking(SharpitTypography.sectionTitleTracking)
                 .foregroundStyle(SharpitColor.foreground)
-            VStack(spacing: 0) {
-                CliniqueDivider()
-                CoachQuickActionList(onPick: onPick, inset: 0)
-                CliniqueDivider()
-            }
-            Text("Depuis un écran, le bouton « discuter » joint le sujet à ta question.")
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.slate)
-                .fixedSize(horizontal: false, vertical: true)
+            Text(
+                String(localized: """
+                Une séance, ta semaine, un signal du jour. \
+                Depuis un écran, le bouton « discuter » joint le sujet à ta question.
+                """)
+            )
+            .font(SharpitTypography.body)
+            .foregroundStyle(SharpitColor.slate)
+            .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
-/// The coach's starting points as lines split by hairlines: in the « + » card and on an empty thread.
+/// The coach's starting points as lines: split by hairlines in the « + » card, bare above the
+/// box of an empty thread.
 struct CoachQuickActionList: View {
+    var actions: [CoachQuickAction] = CoachQuickAction.allCases
+    var showsDividers = true
     let onPick: (CoachQuickAction) -> Void
     var inset: CGFloat = SharpitSpacing.md
 
     var body: some View {
         VStack(spacing: 0) {
-            ForEach(Array(CoachQuickAction.allCases.enumerated()), id: \.element) { index, action in
-                if index > 0 { CliniqueDivider().padding(.leading, inset + 34) }
+            ForEach(Array(actions.enumerated()), id: \.element) { index, action in
+                if showsDividers, index > 0 { CliniqueDivider().padding(.leading, inset + 34) }
                 Button { onPick(action) } label: {
                     HStack(spacing: SharpitSpacing.sm) {
                         Image(systemName: action.symbol)

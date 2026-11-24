@@ -1,14 +1,15 @@
 import SwiftUI
 
-/// Text being written by the coach, drawn up to a soft front: the glyphs behind it are ink, the
-/// last few fade toward it, and nothing shows past it. The front follows the text as it grows,
-/// so words come up out of the page rather than being typed onto it.
+/// Text being written by the coach, revealed line by line: a line fades in whole as the front
+/// reaches it, and the words that then join it are simply there. Glyph by glyph (2026-11-22) read
+/// as slow: the eye waited on every word. A line at a time keeps the arrival soft and the answer
+/// as fast as the stream (the athlete's call, 2026-11-24).
 nonisolated struct SharpitFadeFrontRenderer: TextRenderer {
-    /// How many glyphs are revealed; the `edge` before it are still fading in.
+    /// How many glyphs the front has passed; a line starts fading in when it reaches its first one.
     var front: Double
 
-    /// The width of the fade, in glyphs: about three words.
-    static let edge: Double = 18
+    /// How far the front runs into a line before the line is fully there, in glyphs.
+    static let edge: Double = 10
 
     var animatableData: Double {
         get { front }
@@ -18,27 +19,19 @@ nonisolated struct SharpitFadeFrontRenderer: TextRenderer {
     func draw(layout: Text.Layout, in context: inout GraphicsContext) {
         var index = 0.0
         for line in layout {
-            for run in line {
-                let count = Double(run.count)
-                defer { index += count }
-                // Wholly behind the fade: one draw, as the system would.
-                if front - (index + count) >= Self.edge {
-                    context.draw(run)
-                    continue
-                }
-                // Wholly ahead of the front: not there yet.
-                if front <= index { continue }
-                var glyph = index
-                for slice in run {
-                    let opacity = min(1, max(0, (front - glyph) / Self.edge))
-                    glyph += 1
-                    guard opacity > 0 else { continue }
-                    var faded = context
-                    faded.opacity = opacity
-                    faded.draw(slice)
-                }
-            }
+            let count = line.reduce(0.0) { $0 + Double($1.count) }
+            defer { index += count }
+            let opacity = Self.opacity(front: front, lineStart: index)
+            guard opacity > 0 else { continue }
+            var shown = context
+            shown.opacity = opacity
+            shown.draw(line)
         }
+    }
+
+    /// 0 until the front reaches the line, 1 once it is `edge` glyphs into it.
+    static func opacity(front: Double, lineStart: Double) -> Double {
+        min(1, max(0, (front - lineStart) / edge))
     }
 }
 
@@ -51,7 +44,7 @@ extension View {
     }
 
     /// A block that is not prose — a table, a rule, a list's marker — arriving in an answer
-    /// being written: it fades in once, where prose fades glyph by glyph.
+    /// being written: it fades in once, as each line of prose does.
     func sharpitStreamArrival(isStreaming: Bool) -> some View {
         modifier(SharpitStreamArrival(isStreaming: isStreaming))
     }
@@ -88,14 +81,14 @@ private struct SharpitStreamFade: ViewModifier {
             guard let current = front else { return }
             // The front runs to the end of what is written, at a pace that follows the stream:
             // each new word retargets it rather than restarting it.
-            withAnimation(.linear(duration: 0.4)) { front = max(current, Double(count)) }
-            try? await Task.sleep(for: .milliseconds(420))
+            withAnimation(.linear(duration: 0.22)) { front = max(current, Double(count)) }
+            try? await Task.sleep(for: .milliseconds(240))
             guard !Task.isCancelled else { return }
             // No more words for a moment: the last ones finish coming up.
-            withAnimation(.easeOut(duration: 0.45)) {
+            withAnimation(.easeOut(duration: 0.25)) {
                 front = max(front ?? 0, Double(count) + SharpitFadeFrontRenderer.edge)
             }
-            try? await Task.sleep(for: .milliseconds(500))
+            try? await Task.sleep(for: .milliseconds(300))
             guard !Task.isCancelled, !isStreaming else { return }
             front = nil
         }

@@ -33,9 +33,10 @@ la séance »), « Analyse » once tools answered, « Application du changement 
 `CoachActivity.current(parts:)` reads it from the turn's parts — what the stream says, never a
 script on a timer — and a line stays 0.65 s at least so quick steps do not flicker. It is gone
 once words arrive and leaves no trace in the thread: no « a réfléchi 12 s », no list of steps.
-The answer is not typed: `SharpitMarkdownText(isStreaming:)` draws prose up to a soft front
-(`SharpitFadeFrontRenderer`, a `TextRenderer`), the last glyphs fading in as the front follows
-the stream; a table, a code block or a list's marker fades in once. Text already there (history)
+The answer is not typed: `SharpitMarkdownText(isStreaming:)` reveals prose line by line
+(`SharpitFadeFrontRenderer`, a `TextRenderer`): a line fades in whole as the stream reaches it and
+the words that then join it are simply there — glyph by glyph read as slow (the athlete's call,
+2026-11-24); a table, a code block or a list's marker fades in once. Text already there (history)
 never fades. Nothing in the composer animates as the page opens (`hasOpened`,
 `composerIsSettled`): the budget card and a subject brought from another screen are simply
 there; the card fades when an answer takes the budget past half, and nothing slides or scales.
@@ -127,6 +128,9 @@ floating pills. A subject brought from another screen sits inside the box, over 
 corner and the words land in the field. The budget is one quiet line under the box (`quotaLine`: a
 short gauge, the count, « Passer Pro » for a Free athlete), in the watch ink once spent; the card
 and its cross are gone. Every control in the box is pressable (`.sharpitPressable`) and the box in
-hand shows a hairline edge. An empty thread lays the same starting points on the page
-(`CoachEmptyState`) and so shows no « + », nor the arrow down. Unchanged rules: nothing animates as the page opens, no bounce, no haptic,
+hand shows a hairline edge. An empty thread stays bare (the athlete's call, same day): its title and
+one sentence at the top, and three starting points (`CoachQuickAction.suggested`) as plain lines
+just over the box — no rule, no card — gone as soon as something is typed, joined or the « + » is
+open; no arrow down there. The subject's tag is Clinique: a slate clip, the label, its cross — the
+ink disc with a lime clip was the earlier brand's. Unchanged rules: nothing animates as the page opens, no bounce, no haptic,
 `SharpitMotion` only.
