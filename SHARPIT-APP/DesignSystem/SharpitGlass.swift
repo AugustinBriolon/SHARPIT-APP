@@ -174,11 +174,9 @@ struct SharpitBarTitle: ToolbarContent {
 
 /// Splits two trailing bar buttons into separate glass circles; nothing before iOS 26.
 struct SharpitBarGap: ToolbarContent {
-    var placement: ToolbarItemPlacement = .topBarTrailing
-
     var body: some ToolbarContent {
         if #available(iOS 26.0, *) {
-            ToolbarSpacer(.fixed, placement: placement)
+            ToolbarSpacer(.fixed, placement: .topBarTrailing)
         }
     }
 }

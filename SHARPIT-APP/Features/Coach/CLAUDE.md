@@ -137,8 +137,8 @@ ink disc with a lime clip was the earlier brand's. Unchanged rules: nothing anim
 
 **Bar, greeting, « + » (the athlete's call, 2026-11-24).** This replaces what is said above about
 the bar's name, its « ⋯ » menu and the empty thread's text. The bar carries no name: Conversations
-and « nouvelle conversation » on the left, Mémoire and Consommation on the right, each its own
-button. An empty thread opens on a greeting alone (`CoachGreeting`: « Bonjour, Léa », « Bonsoir, Léa »
+and « nouvelle conversation » on the left, Mémoire and Consommation on the right, each side one
+glass group (two groups, HIG Toolbars; no `SharpitBarGap` here). An empty thread opens on a greeting alone (`CoachGreeting`: « Bonjour, Léa », « Bonsoir, Léa »
 from 18:00 to 5:00, the word alone without a first name — Clerk's). The « + » card is an overlay
 anchored over the box, no longer a row of the composer: opening it covers the suggestions and never
 moves them.

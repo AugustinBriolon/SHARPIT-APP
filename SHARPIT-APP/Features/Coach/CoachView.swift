@@ -88,12 +88,12 @@ struct CoachView: View {
             .toolbar {
                 // No name in the bar (the athlete's call, 2026-11-24): the tab says where this is.
                 // The conversations on the left — the past ones, a new one — what the coach
-                // keeps and spends on the right.
+                // keeps and spends on the right. Each side is one group, two in all: four
+                // separate circles ran past the three groups a bar should hold (HIG, Toolbars).
                 ToolbarItem(placement: .principal) { Text("") }
                 ToolbarItem(placement: .topBarLeading) {
                     barButton("Conversations", symbol: "clock.arrow.circlepath") { showingHistory = true }
                 }
-                SharpitBarGap(placement: .topBarLeading)
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
                         store.startNewConversation()
@@ -107,7 +107,6 @@ struct CoachView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     barButton("Mémoire", symbol: "brain.head.profile") { showingMemory = true }
                 }
-                SharpitBarGap()
                 ToolbarItem(placement: .topBarTrailing) {
                     barButton("Consommation", symbol: "gauge.with.dots.needle.33percent") { showingUsage = true }
                 }
@@ -425,6 +424,8 @@ struct CoachView: View {
                 // An empty thread stays bare: three ways in, low, where the thumb is. No rules, no card.
                 CoachQuickActionList(actions: CoachQuickAction.suggested, showsDividers: false, onPick: start, inset: SharpitSpacing.xs)
                     .transition(.opacity)
+                    // Under the open card they cannot be seen: VoiceOver must not find them there.
+                    .accessibilityHidden(showsQuickActions)
             }
             SharpitGlassGroup { composerBox }
                 // Over the box and whatever stands above it, never between them: the card
