@@ -27,6 +27,8 @@ struct GuidedExerciseThumbView: View {
     let url: URL?
     var size: CGFloat = 44
 
+    @Environment(\.colorScheme) private var colorScheme
+
     var body: some View {
         AsyncImage(url: url) { phase in
             switch phase {
@@ -34,6 +36,9 @@ struct GuidedExerciseThumbView: View {
                 image
                     .resizable()
                     .scaledToFill()
+                    // The drawings stand on white: dimmed in the dark so the square does not glow
+                    // (HIG, Dark Mode), as Matériel's tiles are.
+                    .colorMultiply(colorScheme == .dark ? Color(white: 0.82) : .white)
             case .failure:
                 placeholder
             case .empty:

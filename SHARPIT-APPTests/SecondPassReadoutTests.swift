@@ -243,6 +243,28 @@ private func history(_ name: String, weight: Double? = 60, duration: Int? = nil,
     #expect(Set(listed.map(\.id)).count == listed.count)
 }
 
+@Test func aSearchTypedInFrenchFindsTheCatalogsEnglishNames() {
+    func names(_ query: String) -> [String] { ExerciseMediaCatalog.search(query, limit: 200).map { $0.name.lowercased() } }
+    // A French word reads as its English name…
+    #expect(names("pompes").contains { $0.contains("push up") })
+    #expect(names("haltères").allSatisfy { $0.contains("dumbbell") || $0.contains("haltere") })
+    #expect(!names("haltères").isEmpty)
+    // …a phrase as one movement, several words as all of them…
+    #expect(names("soulevé de terre").contains { $0.contains("deadlift") })
+    #expect(names("curl haltère incliné").allSatisfy { $0.contains("curl") && $0.contains("incline") })
+    #expect(!names("curl haltère incliné").isEmpty)
+    // …and English still finds what it found.
+    #expect(names("dumbbell curl").contains { $0.contains("dumbbell") && $0.contains("curl") })
+    #expect(names("zzzz").isEmpty)
+}
+
+@Test func theGlossaryReadsPhrasesBeforeWordsAndPlurals() {
+    #expect(ExerciseFrenchGlossary.alternatives(for: "developpe couche") == [["developpe couche", "bench press"]])
+    #expect(ExerciseFrenchGlossary.alternatives(for: "fentes") == [["fentes", "lunge"]])
+    #expect(ExerciseFrenchGlossary.alternatives(for: "squat genoux") == [["squat"], ["genoux", "knee"]])
+    #expect(ExerciseFrenchGlossary.alternatives(for: "") == [])
+}
+
 @Test func theIndexGivesTheLetterUnderTheFinger() {
     let titles = ["★", "A", "B", "C"]
     #expect(ExercisePickerReadout.indexTitle(at: 0, in: titles) == "★")

@@ -265,3 +265,10 @@ the session back to the event's slot, undoing a move made in the app.
 a finger sliding on it jumps to the letter, a notch at each one crossed. The field is no longer
 focused on arrival, so the list and the index are whole; typing searches as before. The catalog's
 names are the dataset's — English for most, French only where an alias exists.
+
+**The catalog is searched in French (the athlete's call, 2026-11-25).** Its names are English; a
+query is read through `ExerciseFrenchGlossary` — about a hundred and sixty French gym words and
+phrases with their English names, phrases before words, plurals as their singular — so « pompes »
+finds « push up » and « curl haltère incliné » the incline dumbbell curls. The names listed stay the
+dataset's. A French word the glossary lacks finds nothing: add it there. Exercise thumbnails are
+dimmed in dark mode, as Matériel's tiles.

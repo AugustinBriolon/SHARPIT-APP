@@ -73,16 +73,17 @@ enum ExerciseMediaCatalog {
         let name: String
     }
 
-    /// The catalog's exercises whose name holds every word typed, French aliases first, one
-    /// line per exercise. Empty for an empty query: the catalog is searched, not browsed.
+    /// The catalog's exercises whose name holds every word typed — as typed or under its English
+    /// name (`ExerciseFrenchGlossary`), since the catalog is English and the athlete types French —
+    /// aliases first, one line per exercise. Empty for an empty query.
     static func search(_ query: String, limit: Int = 30) -> [Entry] {
-        let words = normalize(query).split(separator: " ")
+        let words = ExerciseFrenchGlossary.alternatives(for: normalize(query))
         guard !words.isEmpty else { return [] }
         var seen = Set<String>()
         var found: [Entry] = []
         for source in [index.aliases, index.names] {
             for (name, id) in source.sorted(by: { $0.key < $1.key }) where !seen.contains(id) {
-                guard words.allSatisfy({ name.contains($0) }) else { continue }
+                guard words.allSatisfy({ spellings in spellings.contains { name.contains($0) } }) else { continue }
                 seen.insert(id)
                 found.append(Entry(id: id, name: name.prefix(1).uppercased() + name.dropFirst()))
                 if found.count >= limit { return found }
