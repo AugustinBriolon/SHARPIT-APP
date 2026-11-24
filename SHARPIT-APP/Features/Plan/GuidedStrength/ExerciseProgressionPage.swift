@@ -47,6 +47,12 @@ struct ExerciseProgressionPage: View {
         let points = ExerciseProgressionReadout.points(sessions)
         return ScrollView {
             VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+                if let gif = ExerciseMediaCatalog.gifURL(name: name) {
+                    GuidedExerciseMediaView(url: gif, height: 180)
+                    Text(ExerciseMediaCatalog.attribution)
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.slate)
+                }
                 Text(name)
                     .font(SharpitTypography.system(size: 28, weight: .semibold, relativeTo: .title))
                     .tracking(-0.5)

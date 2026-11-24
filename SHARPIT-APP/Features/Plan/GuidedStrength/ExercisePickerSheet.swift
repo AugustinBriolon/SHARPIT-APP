@@ -67,7 +67,7 @@ struct ExercisePickerSheet: View {
                     if !results.own.isEmpty {
                         section(String(localized: "Tes exercices"))
                         ForEach(results.own) { exercise in
-                            row(exercise.name, detail: ExercisePickerReadout.detail(exercise)) {
+                            row(exercise.name, detail: ExercisePickerReadout.detail(exercise), catalogId: exercise.catalogId) {
                                 pick(ExercisePick(name: exercise.name, catalogId: exercise.catalogId, note: exercise.note, history: exercise))
                             }
                             CliniqueDivider()
@@ -76,7 +76,7 @@ struct ExercisePickerSheet: View {
                     if !results.catalog.isEmpty {
                         section(String(localized: "Catalogue"))
                         ForEach(results.catalog) { entry in
-                            row(entry.name, detail: nil) { pick(ExercisePick(name: entry.name, catalogId: entry.id)) }
+                            row(entry.name, detail: nil, catalogId: entry.id) { pick(ExercisePick(name: entry.name, catalogId: entry.id)) }
                             CliniqueDivider()
                         }
                     }
@@ -111,7 +111,7 @@ struct ExercisePickerSheet: View {
                     .padding(.bottom, 10)
                 CliniqueDivider()
                 ForEach(ExercisePickerReadout.zones, id: \.self) { zone in
-                    row(zone, detail: nil) {
+                    row(zone, detail: nil, isExercise: false) {
                         pick(ExercisePick(name: name, note: ExercisePickerReadout.zoneNote(zone)))
                     }
                     CliniqueDivider()
@@ -136,9 +136,14 @@ struct ExercisePickerSheet: View {
             .padding(.bottom, 4)
     }
 
-    private func row(_ title: String, detail: String?, action: @escaping () -> Void) -> some View {
+    /// A zone answer carries no picture; an exercise shows its demonstration's still, or the
+    /// strength glyph when the catalog has none.
+    private func row(_ title: String, detail: String?, catalogId: String? = nil, isExercise: Bool = true, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: SharpitSpacing.sm) {
+                if isExercise {
+                    GuidedExerciseThumbView(url: ExerciseMediaCatalog.thumbURL(catalogId: catalogId, name: title), size: 44)
+                }
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
                         .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))

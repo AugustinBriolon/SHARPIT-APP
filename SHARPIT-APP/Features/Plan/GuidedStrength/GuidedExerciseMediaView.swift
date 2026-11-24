@@ -23,7 +23,8 @@ struct GuidedExerciseMediaView: View {
 
 /// Small static thumb for overview rows (JPG — no decode of animated frames).
 struct GuidedExerciseThumbView: View {
-    let url: URL
+    /// Nil draws the strength glyph: an exercise the catalog has no picture of.
+    let url: URL?
     var size: CGFloat = 44
 
     var body: some View {
@@ -36,7 +37,7 @@ struct GuidedExerciseThumbView: View {
             case .failure:
                 placeholder
             case .empty:
-                SharpitColor.tile
+                if url == nil { placeholder } else { SharpitColor.tile }
             @unknown default:
                 SharpitColor.tile
             }
