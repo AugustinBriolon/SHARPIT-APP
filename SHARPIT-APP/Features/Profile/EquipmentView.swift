@@ -260,6 +260,7 @@ private struct EquipmentThumb: View {
     let item: EquipmentCatalogItem
 
     @ScaledMetric(relativeTo: .callout) private var side: CGFloat = 60
+    @Environment(\.colorScheme) private var colorScheme
     private static let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
 
     var body: some View {
@@ -268,8 +269,10 @@ private struct EquipmentThumb: View {
                 Image(uiImage: drawing)
                     .resizable()
                     .scaledToFill()
-                    // The drawings are opaque, on white: the tile is their paper in both appearances.
+                    // The drawings are opaque, on white: the tile is their paper in both appearances,
+                    // softened in the dark so it does not glow (HIG, Dark Mode).
                     .background(Color.white)
+                    .colorMultiply(colorScheme == .dark ? Color(white: 0.82) : .white)
             } else {
                 Image(systemName: item.symbolName)
                     .font(.system(size: 22, weight: .regular))
@@ -310,8 +313,8 @@ struct EquipmentView: View {
         )
         _store = State(initialValue: store)
         // A profile kept on the iPhone fills the page at once: no redacted frame on a revisit.
-        guard store.phase == .loaded else { return }
-        let kit = Kit(store.profile)
+        guard let kept = store.keptProfile() else { return }
+        let kit = Kit(kept)
         _practicedSports = State(initialValue: kit.sports)
         _strengthVenue = State(initialValue: kit.venue)
         _owned = State(initialValue: kit.owned)

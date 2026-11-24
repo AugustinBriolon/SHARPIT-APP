@@ -34,7 +34,6 @@ mock-up's wear — kilometres per shoe, chain and tyres — is not drawn: the ap
 inventory, no mileage per item. `SharpitScreenDemo equipment` shows it.
 
 **Matériel, drawn (the athlete's assets, 2026-11-24).** Each line opens on its item's drawing
-(`EquipmentThumb`: `Assets.xcassets/Equipment/<item id>`, 264 px, a rounded tile on white) — nineteen
-of the twenty-three; the track, the home trainer, the outdoor bike and the rings keep a glyph on the
-neutral tile until they are drawn. The drawings are opaque on white, so the tile stays white in dark
+(`EquipmentThumb`: `Assets.xcassets/Equipment/<item id>`, 264 px, a rounded tile on white) — all
+twenty-three; an item added without a drawing falls back on its glyph on the neutral tile. The drawings are opaque on white, so the tile stays white in dark
 mode. The page fills from the kept profile on its first frame (`docs/adr/0038`).
