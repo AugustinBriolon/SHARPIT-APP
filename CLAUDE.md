@@ -252,7 +252,10 @@ The source of truth is the web design system, not this repo:
 
 The look is **Clinique** (SHARPIT-WEBAPP ADR-130 / ADR-131, `docs/adr/0035`): a screen is one white
 sheet, cards are part of it (20 pt corner, a 1 pt hairline, no shadow), secondary text is slate, and
-SF Pro carries tabular figures. The rules:
+SF Pro carries tabular figures. Where the web design system and Apple's Human Interface Guidelines
+disagree, the guidelines win (`docs/adr/0008`); the screens built on 2026-11-24 were checked against
+them — an index never beside a trailing control, a control at least 28 pt across, a white image
+softened in dark mode. The rules:
 
 - **Ink runs the interface.** Text, buttons, a selected day, a check, a progress bar are ink. No
   control takes a hue.
@@ -307,7 +310,10 @@ Motion: `SharpitMotion.selection` for controls under the finger, `reveal` for a 
 never bounces, travels further or lands piece after piece — that read as cheap (the athlete's
 remark, 2026-11-18); a ring filling is the one thing that takes its time. A skeleton is the
 screen's own components drawn redacted over placeholder data (Résumé, the day screens, Activité),
-never grey blocks of guessed sizes.
+never grey blocks of guessed sizes. What the app knows without the server is never redacted: a
+fixed list keeps its names — Nutrition's four meals, a section's title — and only the value being
+read waits; a page left and opened again paints the answer kept on the iPhone on its first frame
+(`docs/adr/0038`).
 A Clinique button is felt under the finger (`CliniqueButtonStyle`: 0.97, `selection`), as a pressable
 tile is. A change that moves the layout rides `SharpitMotion.run` rather than jumping: the strength
 set in hand closing into its line, the map card growing for its legend. Recovery's ring sweeps when
@@ -351,7 +357,10 @@ What makes a surface feel finished, applied everywhere new work lands:
 - **Haptics: a notch under the finger, nothing else.** A ruler's units, days painted, a curve
   scrubbed — the finger dialling. Never a tap, a choice, a toggle, a send, a success or navigation:
   the screen already shows it, and felt everywhere it read as noise (the athlete's call,
-  2026-10-05). `SharpitHaptics` has no other kind, on purpose.
+  2026-10-05). `SharpitHaptics` has no other kind, on purpose. The picker's alphabet index is such
+  a dial (a notch per letter crossed); a stepper's − / + counts as one too. The two that are not
+  under the finger are the guided strength session's — a set done, a rest over — felt with their
+  sound because the iPhone is not being looked at then.
 - **Haptics through `SharpitHaptics` only** — Core Haptics. On the athlete's iPhone neither
   `UIFeedbackGenerator` nor SwiftUI's `sensoryFeedback` played anything in the app, while a Core
   Haptics transient did; never reach for either.
@@ -362,7 +371,7 @@ What makes a surface feel finished, applied everywhere new work lands:
 Screen structure follows the web causal column: state → evidence → recommendation →
 projection → limit → confidence.
 
-A tab's name is written in the bar's own row, left of its buttons (`SharpitBarTitle`), and two bar buttons stay two glass circles (`SharpitBarGap`). A day screen has no title: the bar carries the way back and the day as a capsule (`DayDetailDatePicker`). The tab bar stays on every sub-page — none hides it or replaces it with a floating button.
+A tab's name is written in the bar's own row, left of its buttons (`SharpitBarTitle`), and two bar buttons stay two glass circles (`SharpitBarGap`). Coach is the exception (the athlete's call, 2026-11-24): its bar carries no name, and its four buttons are two glass groups — conversations and a new one on the left, memory and usage on the right — since four separate circles ran past the three groups a bar should hold (HIG, Toolbars). A day screen has no title: the bar carries the way back and the day as a capsule (`DayDetailDatePicker`). The tab bar stays on every sub-page — none hides it or replaces it with a floating button.
 
 One wash, at the top of the sheet, and none in content. An ink card is the exception, not a
 screen's opening: only the weekly review's hero still stands as ink. No form, sheet or page opens on an
