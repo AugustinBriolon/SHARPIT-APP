@@ -66,3 +66,15 @@ its own line (« Source principale », a menu) shown once two are on, the leadin
 **Utilisation du coach.** Under « Mémoire du coach », as the mock-up: the share of the budget spent
 over a thin bar in the coach's hue, opening `CoachUsageSheet`. It reads « 38 % sur 24 h », not the
 mock-up's « ce mois »: the budget is a rolling day (SHARPIT ADR-077). Hidden until the quota is read.
+
+**Ton profil and Objectifs, in Paramètres (the athlete's call, 2026-11-25).** This replaces what is
+said above about Compte's face and about « Objectifs » closing the sheet. The page is named as its
+row, « Ton profil », on the large title every settings page takes, and is made of the same rows:
+who is signed in on one line (`AccountLine`: the face, the name over the e-mail, a chevron — it
+opens Clerk's sheet), « Abonnement », then « Identité » and « Profil », each row a glyph in the
+settings column and its value typed or picked at the trailing edge (`AccountFieldRow`,
+`AccountRowTitle`), and « Se déconnecter » as a row. No centred face, no tier pill (the bar of
+Paramètres says it), no redaction: the rows stand and wait for the profile to be edited. « Objectifs »
+is a page of the stack (`SettingsRoute.goals`, `GoalsView` on a `GoalStore` Paramètres owns); the
+stack's path is a `NavigationPath` so a goal can be pushed from it. Plan still opens the same page
+as a sheet.

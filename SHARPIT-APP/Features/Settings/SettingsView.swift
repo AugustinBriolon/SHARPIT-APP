@@ -23,7 +23,6 @@ struct SettingsView: View {
     let privacyClient: any PrivacyConsentServing
 
     @Environment(\.dismiss) private var dismiss
-    @Environment(ShellRouter.self) private var router: ShellRouter?
     @AppStorage(AppearancePreference.storageKey) private var appearance: AppearancePreference = .system
     @State private var profile: AthleteProfileStore
     @State private var push = PushNotificationManager.shared
@@ -34,7 +33,11 @@ struct SettingsView: View {
     @State private var showingCoachUsage = false
     @Environment(ProStore.self) private var pro: ProStore?
     /// The pages open, the first one given when a notification opens Paramètres on it.
-    @State private var path: [SettingsRoute]
+    /// A `NavigationPath`, not an array of routes: a page pushed here pushes its own (a goal,
+    /// from Objectifs), which a typed array would refuse.
+    @State private var path: NavigationPath
+    /// The goals, read here so Objectifs opens in Paramètres instead of sending the athlete to Plan.
+    @State private var goals: GoalStore
 
     init(
         appleHealth: AppleHealthSource,
@@ -48,7 +51,8 @@ struct SettingsView: View {
         privacyClient: any PrivacyConsentServing = PrivacyConsentClient(),
         openingOn route: SettingsRoute? = nil
     ) {
-        _path = State(initialValue: route.map { [$0] } ?? [])
+        _path = State(initialValue: NavigationPath(route.map { [$0] } ?? []))
+        _goals = State(initialValue: GoalStore(client: GoalClient(), tokenProvider: tokenProvider))
         self.appleHealth = appleHealth
         self.appleCalendar = appleCalendar
         self.syncClient = syncClient
@@ -82,22 +86,10 @@ struct SettingsView: View {
                     NavigationLink(value: SettingsRoute.equipment) {
                         SharpitSettingsLabel(title: String(localized: "Matériel"), detail: sportsDetail, symbol: "bicycle")
                     }
-                    // Goals live in Plan: the row closes Paramètres and opens them there.
-                    if let router {
-                        Button {
-                            dismiss()
-                            router.open(.goals)
-                        } label: {
-                            HStack(spacing: SharpitSpacing.sm) {
-                                SharpitSettingsLabel(title: String(localized: "Objectifs"), symbol: "flag")
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundStyle(SharpitColor.slate.opacity(0.5))
-                                    .accessibilityHidden(true)
-                            }
-                            .contentShape(.rect)
-                        }
-                        .buttonStyle(.plain)
+                    // A page of Paramètres like the others (the athlete's call, 2026-11-25): the row
+                    // used to close the sheet and open the goals in Plan.
+                    NavigationLink(value: SettingsRoute.goals) {
+                        SharpitSettingsLabel(title: String(localized: "Objectifs"), symbol: "flag")
                     }
                 }
                 .sharpitListRows()
@@ -191,7 +183,7 @@ struct SettingsView: View {
             .sheet(isPresented: $showingCoachUsage) {
                 CoachUsageSheet(quota: coachQuota) {
                     showingCoachUsage = false
-                    path.append(.pro)
+                    path.append(SettingsRoute.pro)
                 }
             }
         }
@@ -278,6 +270,8 @@ struct SettingsView: View {
         switch route {
         case .account:
             AccountView(profileClient: profileClient, tokenProvider: tokenProvider, modelContext: modelContext)
+        case .goals:
+            GoalsView(store: goals)
         case .coachMemory:
             CoachMemoryView(client: CoachMemoryClient(), tokenProvider: tokenProvider)
         case .pro:
@@ -320,6 +314,7 @@ struct SettingsView: View {
 
 enum SettingsRoute: Hashable {
     case account
+    case goals
     case coachMemory
     case pro
     case sources

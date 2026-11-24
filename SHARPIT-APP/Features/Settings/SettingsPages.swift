@@ -40,32 +40,21 @@ struct AccountView: View {
 
     var body: some View {
         List {
+            // Who is signed in, on one line as the system's own settings open: the face, the name
+            // and the e-mail, opening Clerk's sheet for the photo, the e-mail and the password.
             Section {
-                AccountHeader(
-                    firstName: firstName,
-                    lastName: lastName,
-                    isPro: isPro,
-                    onEditPhoto: { isEditingAccount = true }
-                )
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets())
-            }
-
-            // The header already says who and which tier: the rows only open what changes them.
-            Section(eyebrow: String(localized: "Connexion")) {
                 Button { isEditingAccount = true } label: {
-                    SharpitSettingsLabel(
-                        title: String(localized: "Photo et sécurité"),
-                        detail: String(localized: "E-mail et mot de passe")
-                    )
+                    AccountLine(firstName: firstName, lastName: lastName)
                 }
                 .buttonStyle(.plain)
+                .accessibilityHint("Ouvre la photo, l'e-mail et le mot de passe")
                 NavigationLink(value: SettingsRoute.pro) {
                     SharpitSettingsLabel(
                         title: String(localized: "Abonnement"),
                         detail: isPro || pro?.pro?.subscription != nil
                             ? ProReadout.status(pro?.pro?.subscription, isPro: isPro)
-                            : String(localized: "Découvrir SharpIt Pro")
+                            : String(localized: "Découvrir"),
+                        symbol: "sparkles"
                     )
                 }
             }
@@ -75,13 +64,13 @@ struct AccountView: View {
                 eyebrow: String(localized: "Identité"),
                 footer: String(localized: "Ton prénom sert à te saluer, ton nom reste sur ton compte.")
             ) {
-                LabeledContent("Prénom") {
+                AccountFieldRow(title: String(localized: "Prénom"), symbol: "person") {
                     TextField("Prénom", text: $firstName)
                         .multilineTextAlignment(.trailing)
                         .textContentType(.givenName)
                         .submitLabel(.done)
                 }
-                LabeledContent("Nom") {
+                AccountFieldRow(title: String(localized: "Nom"), symbol: "person.text.rectangle") {
                     TextField("Nom", text: $lastName)
                         .multilineTextAlignment(.trailing)
                         .textContentType(.familyName)
@@ -94,13 +83,17 @@ struct AccountView: View {
                 eyebrow: String(localized: "Profil"),
                 footer: String(localized: "Le sexe, la taille et l'âge servent à l'âge biologique et aux normes de fréquence cardiaque.")
             ) {
-                Picker("Sexe", selection: sexBinding) {
+                Picker(selection: sexBinding) {
                     Text("Non renseigné").tag(AthleteSex?.none)
                     ForEach(AthleteSex.allCases) { sex in
                         Text(sex.label).tag(AthleteSex?.some(sex))
                     }
+                } label: {
+                    AccountRowTitle(title: String(localized: "Sexe"), symbol: "figure.stand")
                 }
-                LabeledContent("Taille") {
+                .pickerStyle(.menu)
+                .tint(SharpitColor.slate)
+                AccountFieldRow(title: String(localized: "Taille"), symbol: "ruler") {
                     HStack(spacing: SharpitSpacing.xxs) {
                         TextField("178", text: $form.heightCm)
                             .keyboardType(.numberPad)
@@ -117,30 +110,34 @@ struct AccountView: View {
                 if form.birthDate != nil {
                     // The age reads under the label it derives from, not on a read-only row of its own.
                     DatePicker(selection: birthDateBinding, in: Self.birthDateRange, displayedComponents: .date) {
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text("Date de naissance")
-                            if let age = AccountAge.label(birthDate: form.birthDate) {
-                                Text(age)
-                                    .font(SharpitTypography.meta)
-                                    .foregroundStyle(SharpitColor.slate)
-                                    .contentTransition(.numericText())
-                            }
-                        }
+                        AccountRowTitle(
+                            title: String(localized: "Date de naissance"),
+                            symbol: "calendar",
+                            detail: AccountAge.label(birthDate: form.birthDate)
+                        )
                     }
                     .environment(\.locale, SharpitLocale.current)
                 } else {
-                    Button("Ajouter ta date de naissance") {
+                    Button {
                         form.birthDate = Self.defaultBirthDate
                         scheduleProfileSave()
+                    } label: {
+                        AccountRowTitle(title: String(localized: "Ajouter ta date de naissance"), symbol: "calendar")
                     }
+                    .buttonStyle(.plain)
                 }
             }
             .sharpitListRows()
 
             Section {
                 Button(role: .destructive) { isConfirmingSignOut = true } label: {
-                    Text("Se déconnecter").frame(maxWidth: .infinity)
+                    AccountRowTitle(
+                        title: String(localized: "Se déconnecter"),
+                        symbol: "rectangle.portrait.and.arrow.right",
+                        tone: SharpitColor.signalRisk
+                    )
                 }
+                .buttonStyle(.plain)
             } footer: {
                 SharpitListFooter(String(localized: "Tes données restent sur ton compte. Pour le supprimer, va dans Confidentialité & conditions."))
             }
@@ -153,11 +150,13 @@ struct AccountView: View {
             Text("Les données gardées sur cet iPhone sont effacées. Elles reviennent à ta prochaine connexion.")
         }
         .sharpitGroupedList()
+        // The rows are known before the profile is: they stand, and wait to be edited
+        // (`docs/adr/0038`). No redaction.
         .disabled(!hasLoaded)
-        .redacted(reason: hasLoaded ? [] : .placeholder)
         .scrollDismissesKeyboard(.interactively)
-        .navigationTitle("Compte")
-        .navigationBarTitleDisplayMode(.inline)
+        // The name of the row that opens it, on the large title every settings page takes.
+        .navigationTitle("Ton profil")
+        .navigationBarTitleDisplayMode(.large)
         .task {
             firstName = clerk.user?.firstName ?? ""
             lastName = clerk.user?.lastName ?? ""
@@ -249,50 +248,87 @@ struct AccountView: View {
     }()
 }
 
-/// The page's top: the face (a tap opens Clerk's photo editor), the name as typed below, the
-/// e-mail and the tier.
-private struct AccountHeader: View {
+/// Who is signed in, as one line: the face, the name as typed over the e-mail, and a chevron,
+/// since the line opens Clerk's sheet.
+private struct AccountLine: View {
     let firstName: String
     let lastName: String
-    let isPro: Bool
-    let onEditPhoto: () -> Void
 
-    @Environment(Clerk.self) private var clerk
-    @ScaledMetric(relativeTo: .largeTitle) private var avatarSize: CGFloat = 96
+    @Environment(Clerk.self) private var clerk: Clerk?
+    @ScaledMetric(relativeTo: .body) private var avatarSize: CGFloat = 44
 
     var body: some View {
-        VStack(spacing: SharpitSpacing.sm) {
-            Button(action: onEditPhoto) {
-                AccountAvatar(size: avatarSize)
-                    .overlay(alignment: .bottomTrailing) {
-                        Image(systemName: "camera.fill")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(SharpitColor.inkSurfaceForeground)
-                            .frame(width: 28, height: 28)
-                            .background(SharpitColor.inkSurface, in: Circle())
-                    }
-            }
-            .buttonStyle(.sharpitPressable)
-            .accessibilityLabel("Changer la photo")
-
-            VStack(spacing: SharpitSpacing.xxs) {
+        HStack(spacing: SharpitSpacing.sm) {
+            if clerk != nil { AccountAvatar(size: avatarSize) }
+            VStack(alignment: .leading, spacing: 2) {
                 Text(AccountDisplayName.from(first: firstName, last: lastName) ?? String(localized: "Ton compte"))
-                    .font(SharpitTypography.sectionTitle)
-                    .tracking(SharpitTypography.sectionTitleTracking)
+                    .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body))
                     .foregroundStyle(SharpitColor.foreground)
                     .lineLimit(1)
-                if let email = clerk.user?.primaryEmailAddress?.emailAddress {
+                if let email = clerk?.user?.primaryEmailAddress?.emailAddress {
                     Text(email)
                         .font(SharpitTypography.meta)
                         .foregroundStyle(SharpitColor.slate)
                         .lineLimit(1)
                 }
             }
-            SharpitPill(isPro ? String(localized: "Pro") : String(localized: "Gratuit"), style: isPro ? .lime : .neutral)
+            Spacer(minLength: SharpitSpacing.xs)
+            Image(systemName: "chevron.right")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(SharpitColor.slate.opacity(0.5))
+                .accessibilityHidden(true)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, SharpitSpacing.md)
-        .accessibilityElement(children: .contain)
+        .padding(.vertical, 4)
+        .contentShape(.rect)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
+    }
+}
+
+/// A profile row's leading half: the glyph in the settings rows' column, the title, and under it
+/// what derives from the value (the age under the birth date).
+private struct AccountRowTitle: View {
+    let title: String
+    let symbol: String
+    var detail: String?
+    var tone: Color = SharpitColor.foreground
+
+    var body: some View {
+        HStack(spacing: SharpitSpacing.sm) {
+            Image(systemName: symbol)
+                .font(.system(size: 17, weight: .regular))
+                .foregroundStyle(tone)
+                .frame(width: 28)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title)
+                    .font(SharpitTypography.system(size: 17, weight: .regular, relativeTo: .body))
+                    .foregroundStyle(tone)
+                if let detail {
+                    Text(detail)
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.slate)
+                        .contentTransition(.numericText())
+                }
+            }
+        }
+        .padding(.vertical, 3)
+    }
+}
+
+/// A profile row typed in place: its title on the left, the field at the trailing edge.
+private struct AccountFieldRow<Field: View>: View {
+    let title: String
+    let symbol: String
+    @ViewBuilder let field: Field
+
+    var body: some View {
+        HStack(spacing: SharpitSpacing.sm) {
+            AccountRowTitle(title: title, symbol: symbol)
+            field
+                .font(SharpitTypography.system(size: 17, weight: .regular, relativeTo: .body, digits: true))
+                .foregroundStyle(SharpitColor.slate)
+        }
     }
 }
 
