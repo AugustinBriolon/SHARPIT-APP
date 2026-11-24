@@ -2,6 +2,8 @@ import SwiftUI
 
 /// One thing SharpIt Pro adds, as the paywall says it: a glyph in a pillar's hue and one sentence.
 /// The ids are the server's (`pro-perks.ts` in SHARPIT-WEBAPP), whose longer copy Réglages › Pro reads.
+/// Each sentence says only what the app does today, with its limits (which watch, which sports):
+/// a paywall that sells more than the app offers is refused (App Review 2.3.1, 3.1.2(c)).
 nonisolated struct ProPerkLine: Identifiable, Equatable, Sendable {
     let id: String
     let symbol: String
@@ -16,7 +18,7 @@ nonisolated struct ProPerkLine: Identifiable, Equatable, Sendable {
         ProPerkLine(id: "journal-coach-read", symbol: "checklist", pillar: .coach, sentence: String(localized: "Tes habitudes analysées, un ou deux ajustements à tester")),
         ProPerkLine(id: "nutrition-reading", symbol: "flame", pillar: .nutrition, sentence: String(localized: "Ta nutrition lue chaque jour face à ton entraînement")),
         ProPerkLine(id: "biological-age", symbol: "heart", pillar: .sleep, sentence: String(localized: "Ton âge biologique, estimé depuis ta VO₂max")),
-        ProPerkLine(id: "watch-push", symbol: "applewatch", pillar: .recovery, sentence: String(localized: "Tes séances envoyées sur ta montre")),
+        ProPerkLine(id: "watch-push", symbol: "applewatch", pillar: .recovery, sentence: String(localized: "Tes séances de course, vélo et natation envoyées sur ta montre Garmin")),
         ProPerkLine(id: "extra-widgets", symbol: "square.grid.2x2", pillar: .sleep, sentence: String(localized: "Sommeil, poids, volume et régularité sur ton écran d'accueil")),
         ProPerkLine(id: "early-access", symbol: "clock.badge.checkmark", pillar: .coach, sentence: String(localized: "Les nouveautés chez toi avant tout le monde")),
         ProPerkLine(id: "support", symbol: "hand.raised", pillar: .nutrition, sentence: String(localized: "SharpIt sans publicité ni revente de données, grâce à toi")),

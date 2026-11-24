@@ -56538,22 +56538,6 @@
         }
       }
     },
-    "Tes séances envoyées sur ta montre" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your sessions sent to your watch"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tes séances envoyées sur ta montre"
-          }
-        }
-      }
-    },
     "Sommeil, poids, volume et régularité sur ton écran d'accueil" : {
       "localizations" : {
         "en" : {
@@ -56710,6 +56694,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sans salle ni matériel, tes séances se font au poids du corps."
+          }
+        }
+      }
+    },
+    "Tes séances de course, vélo et natation envoyées sur ta montre Garmin" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your run, ride and swim sessions sent to your Garmin watch"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tes séances de course, vélo et natation envoyées sur ta montre Garmin"
           }
         }
       }

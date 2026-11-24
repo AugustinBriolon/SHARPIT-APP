@@ -14,7 +14,7 @@ App Store Connect. Order follows the launch plan: legal → iOS compliance → p
 | Export compliance: `ITSAppUsesNonExemptEncryption = NO` (HTTPS only) | build settings, app target |
 | Usage strings: Health read/write, location, camera, microphone, speech, calendars, Bluetooth | build settings `INFOPLIST_KEY_NS*` |
 | Account deletion in the app | Paramètres › Confidentialité |
-| No Garmin in the app (guideline 5.2.2) | iOS ADR 0013 |
+| Garmin through its Connect Developer Program only: in-app OAuth, data by push (guideline 5.2.2) | iOS ADR 0024 (supersedes 0013, 0023) |
 | SharpIt Pro: StoreKit 2 paywall (`SharpitProPaywallSheet`, App Store prices and intro offer from `Product`) with `appAccountToken`, restore, manage, auto-renew notice, Terms + Privacy links | `Features/Pro/SharpitProPaywallSheet.swift`, `Features/Pro/ProView.swift` |
 | Every transaction verified by the server (JWS against Apple's roots), tier derived server-side | SHARPIT ADR-044, `/api/v1/billing/apple/verify` |
 | App Store Server Notifications V2 (renewal, expiry, grace, billing retry, refund, revoke) | `/api/billing/apple/notifications` |
@@ -43,9 +43,24 @@ Mirrors `Config/SharpitPro.storekit`. The product ids are fixed in code (`Sharpi
 
 Review screenshot of the paywall: Paramètres › SharpIt Pro on a free account.
 
-**Check before submitting:** the perk « Envoi vers la montre » is listed as Pro by the web
-(`pro-perks.ts`) and shows in the iOS paywall, but the iOS app has no Garmin push (ADR 0013).
-Mark it `planned` or hide it on iOS so the paywall only sells what the app does (guideline 2.3.1).
+**The paywall sells what the app does** (guidelines 2.3.1, 3.1.2(c)). Since 2026-11-24 it lists the
+eleven perks of `pro-perks.ts`, one sentence each (`ProPerkLine.all`). Checked against the app on
+2026-11-25:
+
+- « Envoi vers la montre » exists for a Garmin watch and for run, ride and swim sessions only
+  (`WatchPushState.canSend`); the sentence says so.
+- « Accès anticipé » has no mechanism in the app: nothing reaches a Pro athlete earlier than a free
+  one. Either give it one, or take the perk out of `pro-perks.ts` and `ProPerkLine.all` before a
+  submission.
+- The paywall changed on 2026-11-24: the review screenshot of the subscription in App Store Connect
+  and the App Store screenshots that show the paywall or the Coach tab are to be shot again.
+
+## Open before the next submission
+
+- **Exercise pictures (guideline 5.2.1).** They are Gym Visual's, hotlinked from a third-party
+  mirror, with no licence on record (`docs/adr/0037`). Since 2026-11-24 the picker lists the whole
+  catalog, about 1,300 pictures. Buy the licence and self-host, or replace the source, before
+  submitting. The attribution line (`ExerciseMediaCatalog.attribution`) is defined and shown nowhere.
 
 ## Localization (App Store Connect)
 
