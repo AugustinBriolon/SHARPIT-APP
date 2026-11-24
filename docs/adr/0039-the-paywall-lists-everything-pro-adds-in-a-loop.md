@@ -26,14 +26,16 @@ and a half lines (`ProPerkConveyor`).
 - The lines are `ProPerkLine.all`: the server's eleven ids, each with a glyph, a pillar's hue and
   one sentence written for the paywall. They are local, so the paywall draws them without waiting
   for `/api/v1/pro`.
-- The motion is a function of the clock (`ConveyorLoop`): a steady 22 pt a second, plus what is
-  left of the last flick. The finger takes the list either way; on release it carries on from
-  there. The offset is wrapped to one length of the list, and two copies are drawn so the window
+- The motion is a function of the clock (`ConveyorLoop`): a steady 22 pt a second, eased in
+  from rest. A finger laid on the list holds it and can take it either way; on release the flick
+  dies down, the list rests two seconds, then the rise eases back in over 1.6 s (its speed
+  follows a smoothstep, so it never starts with a step). The offset is wrapped to one length of the list, and two copies are drawn so the window
   is always full.
 - Under Reduce Motion or at the accessibility text sizes the column is the plain list, and
   VoiceOver always reads the plain list.
 - No haptic: nothing here is a notch under the finger.
-- The sub-paragraph is removed. That the data stays free is said by the last line of the list.
+- The sub-paragraph is removed. The paywall no longer says that the athlete's data stays free;
+  the last line of the list says SharpIt runs without ads or data resale.
 
 ## Options considered
 

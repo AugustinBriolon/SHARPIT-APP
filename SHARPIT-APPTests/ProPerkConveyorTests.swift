@@ -23,13 +23,33 @@ import Testing
     #expect(ConveyorLoop.wrapped(50, length: 0) == 0)
 }
 
-@Test func aFlickDiesDownIntoTheSteadyRise() {
-    let rest = ConveyorLoop.offset(from: 100, elapsed: 2, fling: 0)
-    #expect(rest == 100 + ConveyorLoop.speed * 2)
-    // A flick adds its travel, bounded, and nothing more once it has died down.
-    let thrown = ConveyorLoop.offset(from: 100, elapsed: 10, fling: 800)
-    #expect(abs(thrown - (100 + ConveyorLoop.speed * 10 + 800 * ConveyorLoop.flingDecay)) < 0.01)
-    // A flick the other way takes the list back before it rises again.
-    #expect(ConveyorLoop.offset(from: 100, elapsed: 0.2, fling: -800) < 100)
-    #expect(ConveyorLoop.offset(from: 0, elapsed: 1, fling: 99_999) == ConveyorLoop.offset(from: 0, elapsed: 1, fling: ConveyorLoop.maxFling))
+@Test func theListRisesAtItsSpeedWhenThePaywallOpens() {
+    // Eased in from rest, then steady: past the ramp it has lost half the ramp's travel.
+    let ramp = ConveyorLoop.resumeRamp
+    #expect(ConveyorLoop.offset(from: 100, elapsed: 0, fling: 0, delay: 0) == 100)
+    #expect(abs(ConveyorLoop.offset(from: 100, elapsed: ramp + 2, fling: 0, delay: 0) - (100 + ConveyorLoop.speed * (2 + ramp / 2))) < 0.001)
+}
+
+@Test func aTouchHoldsTheListThenTheRiseEasesBackIn() {
+    let delay = ConveyorLoop.resumeDelay
+    // Released without a flick: nothing moves until the wait is over.
+    #expect(ConveyorLoop.offset(from: 100, elapsed: delay - 0.1, fling: 0, delay: delay) == 100)
+    // Then the speed grows without a step: each tenth of a second covers more than the last.
+    let steps = (0...6).map { ConveyorLoop.rise(after: Double($0) * 0.1) }
+    let gains = zip(steps.dropFirst(), steps).map { $0 - $1 }
+    #expect(gains == gains.sorted())
+    #expect(gains[0] < ConveyorLoop.speed * 0.1 * 0.05)
+    // And it meets the steady rise with no jump at the end of the ramp.
+    let ramp = ConveyorLoop.resumeRamp
+    #expect(abs(ConveyorLoop.rise(after: ramp + 0.001) - ConveyorLoop.rise(after: ramp - 0.001)) < ConveyorLoop.speed * 0.003)
+}
+
+@Test func aFlickDiesDownBeforeTheListSetsOffAgain() {
+    let delay = ConveyorLoop.resumeDelay
+    // A flick adds its travel, bounded, and has died down by the time the rise comes back.
+    let thrown = ConveyorLoop.offset(from: 100, elapsed: delay, fling: 800, delay: delay)
+    #expect(abs(thrown - (100 + 800 * ConveyorLoop.flingDecay)) < 2)
+    // A flick the other way takes the list back.
+    #expect(ConveyorLoop.offset(from: 100, elapsed: 0.2, fling: -800, delay: delay) < 100)
+    #expect(ConveyorLoop.offset(from: 0, elapsed: 1, fling: 99_999, delay: delay) == ConveyorLoop.offset(from: 0, elapsed: 1, fling: ConveyorLoop.maxFling, delay: delay))
 }

@@ -38,17 +38,33 @@ nonisolated enum ConveyorLoop {
         return remainder < 0 ? remainder + length : remainder
     }
 
+    /// How long the list waits, once the finger has left, before it rises by itself again.
+    static let resumeDelay: Double = 2
+    /// How long the rise takes to come back to its speed: eased in, never a start.
+    static let resumeRamp: Double = 1.6
+
     /// The offset `elapsed` seconds after the finger left at `fling` points a second: the flick's
-    /// travel dies down as the steady rise carries on, so the list never stops then starts.
-    static func offset(from anchor: Double, elapsed: Double, fling: Double) -> Double {
+    /// travel dies down, the list rests for `delay`, then the rise eases back in.
+    static func offset(from anchor: Double, elapsed: Double, fling: Double, delay: Double) -> Double {
         let time = max(elapsed, 0)
         let thrown = min(max(fling, -maxFling), maxFling)
-        return anchor + speed * time + thrown * flingDecay * (1 - exp(-time / flingDecay))
+        return anchor + rise(after: time - delay) + thrown * flingDecay * (1 - exp(-time / flingDecay))
+    }
+
+    /// How far the list has risen by itself `time` seconds after it set off again: its speed
+    /// follows a smoothstep from 0 to `speed` over `resumeRamp`, then holds.
+    static func rise(after time: Double) -> Double {
+        guard time > 0 else { return 0 }
+        guard time < resumeRamp else { return speed * (time - resumeRamp / 2) }
+        let progress = time / resumeRamp
+        // The integral of 3x² − 2x³, the smoothstep the speed follows.
+        return speed * resumeRamp * (pow(progress, 3) - pow(progress, 4) / 2)
     }
 }
 
-/// Everything Pro adds, rising without end under the paywall's title; the finger can take the
-/// list either way and it carries on from there (the athlete's request, 2026-11-24). Under
+/// Everything Pro adds, rising without end under the paywall's title. A finger laid on the list
+/// holds it and can take it either way; two seconds after it leaves, the rise eases back in
+/// (the athlete's request, 2026-11-24). Under
 /// Reduce Motion or at the accessibility text sizes it is the plain list.
 struct ProPerkConveyor: View {
     var perks: [ProPerkLine] = ProPerkLine.all
@@ -59,6 +75,8 @@ struct ProPerkConveyor: View {
     @State private var anchor: Double = 0
     @State private var anchoredAt = Date.now
     @State private var fling: Double = 0
+    /// No wait when the paywall opens; `ConveyorLoop.resumeDelay` once the finger has left.
+    @State private var resumeDelay: Double = 0
     /// Where the list stood when the finger landed; nil while it runs by itself.
     @State private var dragOrigin: Double?
     @State private var dragTravel: Double = 0
@@ -84,7 +102,7 @@ struct ProPerkConveyor: View {
 
     private var conveyor: some View {
         let length = Double(rowHeight) * Double(perks.count)
-        return TimelineView(.animation(paused: dragOrigin != nil)) { context in
+        return TimelineView(.animation) { context in
             let offset = ConveyorLoop.wrapped(position(at: context.date), length: length)
             // Two copies, so the window is always full whatever part of the list it shows.
             VStack(spacing: 0) {
@@ -113,11 +131,14 @@ struct ProPerkConveyor: View {
 
     private func position(at date: Date) -> Double {
         if let dragOrigin { return dragOrigin - dragTravel }
-        return ConveyorLoop.offset(from: anchor, elapsed: date.timeIntervalSince(anchoredAt), fling: fling)
+        return ConveyorLoop.offset(
+            from: anchor, elapsed: date.timeIntervalSince(anchoredAt), fling: fling, delay: resumeDelay
+        )
     }
 
     private var drag: some Gesture {
-        DragGesture(minimumDistance: 6)
+        // From the touch itself, not from a first movement: a finger laid on the list holds it.
+        DragGesture(minimumDistance: 0)
             .onChanged { value in
                 if dragOrigin == nil { dragOrigin = position(at: .now) }
                 dragTravel = value.translation.height
@@ -126,6 +147,7 @@ struct ProPerkConveyor: View {
                 anchor = (dragOrigin ?? anchor) - value.translation.height
                 anchoredAt = .now
                 fling = -value.velocity.height
+                resumeDelay = ConveyorLoop.resumeDelay
                 dragOrigin = nil
                 dragTravel = 0
             }
