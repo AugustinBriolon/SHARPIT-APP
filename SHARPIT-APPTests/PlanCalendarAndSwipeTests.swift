@@ -114,6 +114,16 @@ import Testing
         #expect(!AppleCalendarPull.shouldClearScheduleAfterCalendarDelete(wasOnWriteCalendar: false, wasSyncedBefore: false))
     }
 
+    /// A session the plan moved leaves its event where it was written: only an event that left
+    /// that slot was moved by the athlete.
+    @Test func anEventIsMovedOnlyWhenItLeftWhereItWasWritten() {
+        let written = Date(timeIntervalSince1970: 1_795_000_000)
+        #expect(!AppleCalendarPull.eventWasMoved(event: written, lastWritten: written))
+        #expect(!AppleCalendarPull.eventWasMoved(event: written.addingTimeInterval(30), lastWritten: written))
+        #expect(AppleCalendarPull.eventWasMoved(event: written.addingTimeInterval(3_600), lastWritten: written))
+        #expect(!AppleCalendarPull.eventWasMoved(event: written, lastWritten: nil))
+    }
+
     @Test func calendarDeletePatchClearsStartTime() {
         let fields = AppleCalendarPull.clearScheduleFields()
         #expect(fields["startTime"] == .null)
@@ -171,6 +181,25 @@ import Testing
         #expect(event.isAllDay)
         #expect(event.end.timeIntervalSince(event.start) == 86_400)
         #expect(event.notes == nil)
+    }
+
+    /// Done the day before it was planned: the server moved it there, and the event lasts what
+    /// the session really took.
+    @Test func aDoneSessionLastsWhatItTook() throws {
+        let session = V1PlannedSessionItem(
+            id: "s3", date: day("2026-11-22"), startTime: "17:40", title: "Push day", type: "STRENGTH",
+            durationMin: 60, activityId: "a1", activity: V1PlannedSessionActivitySummary(id: "a1", duration: 47 * 60)
+        )
+        let event = try #require(PlanCalendarPlanner.events(for: [session], calendar: calendar).first)
+        #expect(calendar.component(.day, from: event.start) == 22)
+        #expect(calendar.component(.hour, from: event.start) == 17)
+        #expect(event.end.timeIntervalSince(event.start) == 47 * 60)
+    }
+
+    @Test func aSessionAheadLastsWhatIsPlanned() {
+        let planned = V1PlannedSessionItem(id: "s4", date: day("2026-11-24"), title: "Footing", type: "RUN", durationMin: 40)
+        #expect(PlanCalendarPlanner.minutes(for: planned) == 40)
+        #expect(PlanCalendarPlanner.minutes(for: V1PlannedSessionItem(id: "s5", date: day("2026-11-24"))) == 60)
     }
 }
 

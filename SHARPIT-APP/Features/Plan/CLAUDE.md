@@ -248,3 +248,12 @@ depuis le 20 sept. », the best load of each day as a line (the longest hold for
 loaded; the Y axis does not start at zero), then every day's sets, newest first. Read from
 `/api/v1/strength-exercises/progression?name=` (the last 60 days the exercise was done, folded name).
 `SharpitScreenDemo exercise-progression` shows it on fixed days.
+
+**A done session stands where it was done (2026-11-23).** A strength session planned for Monday and
+launched on Sunday stayed on Monday, in Plan and in the calendar. The server's link now moves the
+session to the activity's day and time (SHARPIT-WEBAPP `done-schedule.ts`; a brick's leg and the
+same-day auto-link are left alone). The calendar copy (`AppleCalendarSync`) is kept right seven days
+back as well (`PlanCalendarPlanner.lookbackDays`), a done session's event lasts what the activity
+took, and an event is read as moved by the athlete only when it left the slot the app last wrote
+(`writtenStartsKey`, `AppleCalendarPull.eventWasMoved`): before, any gap between plan and event sent
+the session back to the event's slot, undoing a move made in the app.

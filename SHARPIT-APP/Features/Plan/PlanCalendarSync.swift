@@ -14,10 +14,22 @@ nonisolated struct PlanCalendarEvent: Equatable, Sendable {
 
 /// What the calendar should hold — pure, so the rules are tested. A session with a time takes
 /// its slot (its duration, an hour without one); a session without one is an all-day event.
-/// Sessions done or linked to an activity stay: the calendar is a diary of the plan too.
+/// Sessions done or linked to an activity stay: the calendar is a diary of the plan too — a done
+/// session stands where the server put it, the day and time it was done, for as long as it took.
 nonisolated enum PlanCalendarPlanner {
     /// How far ahead the plan is copied.
     static let horizonDays = 21
+    /// How far back it is kept right: a session done on another day than planned moves there,
+    /// often to a day already past — its event has to follow, and the planned one to go.
+    static let lookbackDays = 7
+
+    /// The minutes an event lasts: what the activity took once done, else what was planned.
+    static func minutes(for session: V1PlannedSessionItem) -> Int {
+        if let seconds = session.activity?.duration, seconds.isFinite, seconds >= 60 {
+            return min(Int((seconds / 60).rounded()), 24 * 60)
+        }
+        return session.durationMin ?? defaultMinutes
+    }
     static let defaultMinutes = 60
 
     static func url(for sessionId: String) -> URL {
@@ -33,7 +45,7 @@ nonisolated enum PlanCalendarPlanner {
         let name = session.title ?? session.displayType
         let title = session.isKey ? String(localized: "\(name) · clé") : name
         let notes = [session.durationMin.map { "\($0) min" }, session.notes].compactMap { $0 }.joined(separator: "\n")
-        let minutes = session.durationMin ?? defaultMinutes
+        let minutes = Self.minutes(for: session)
         if let clock = session.startTime.flatMap(Self.clock),
            let start = calendar.date(bySettingHour: clock.hour, minute: clock.minute, second: 0, of: day) {
             return PlanCalendarEvent(
@@ -69,6 +81,9 @@ final class AppleCalendarSync {
     static let syncedSessionIdsKey = "appleCalendar.syncedSessionIds"
     static let clearedSessionIdsKey = "appleCalendar.clearedSessionIds"
     static let skipApplyUntilKey = "appleCalendar.skipApplySessionUntil"
+    /// Where each session's event was last written (its start, seconds since 1970): what tells
+    /// an event the athlete moved from a session the plan moved.
+    static let writtenStartsKey = "appleCalendar.writtenStarts"
     private static let skipApplyTTL: TimeInterval = 5 * 60
     private static let legacyCalendarIdKey = "planCalendarSync.calendarId"
     static let calendarTitle = "SharpIt"
@@ -161,6 +176,7 @@ final class AppleCalendarSync {
         defaults.removeObject(forKey: Self.legacyCalendarIdKey)
         defaults.removeObject(forKey: Self.syncedSessionIdsKey)
         defaults.removeObject(forKey: Self.skipApplyUntilKey)
+        defaults.removeObject(forKey: Self.writtenStartsKey)
     }
 
     func refresh(
@@ -173,13 +189,15 @@ final class AppleCalendarSync {
         now: Date = .now
     ) async {
         guard EKEventStore.authorizationStatus(for: .event) == .fullAccess else { return }
-        let start = calendar.startOfDay(for: now)
-        let end = calendar.date(byAdding: .day, value: PlanCalendarPlanner.horizonDays, to: start) ?? now
+        let today = calendar.startOfDay(for: now)
+        let end = calendar.date(byAdding: .day, value: PlanCalendarPlanner.horizonDays, to: today) ?? now
+        // The plan is kept right a week back as well; the busy slots only matter ahead.
+        let start = calendar.date(byAdding: .day, value: -PlanCalendarPlanner.lookbackDays, to: today) ?? today
         do {
             let token = try await tokenProvider()
             let prefsAnswer = try await sourcePrefsClient.sourcePrefs(token: token)
             if Self.shouldUploadBusy(prefs: prefsAnswer.prefs, connected: prefsAnswer.connected) {
-                await uploadBusy(from: start, to: end, client: busyClient, token: token)
+                await uploadBusy(from: today, to: end, client: busyClient, token: token)
             }
             guard Self.shouldWrite(connected: prefsAnswer.connected) else { return }
             if Self.serverWritesGoogle(prefs: prefsAnswer.prefs, connected: prefsAnswer.connected) {
@@ -219,6 +237,7 @@ final class AppleCalendarSync {
             do {
                 try apply(wanted, to: writeCalendar, from: start, to: end, preserveSessionIds: pull.skipApplySessionIds)
                 persistSyncedSessionIds(pull.syncedSessionIds, afterWriting: wanted)
+                persistWrittenStarts(afterWriting: wanted, keeping: pull.skipApplySessionIds)
             } catch {
                 SharpitWriteFailures.shared.report(String(localized: "Calendrier : mise à jour impossible. Réessaie plus tard."))
             }
@@ -275,6 +294,7 @@ final class AppleCalendarSync {
         var syncedSessionIds = Set(defaults.stringArray(forKey: Self.syncedSessionIdsKey) ?? [])
         var clearedSessionIds = Set(defaults.stringArray(forKey: Self.clearedSessionIdsKey) ?? [])
         var skipApplySessionIds = loadSkipApplySessionIds()
+        let writtenStarts = (defaults.dictionary(forKey: Self.writtenStartsKey) as? [String: Double]) ?? [:]
         var updated = sessions
         for (index, session) in sessions.enumerated() {
             let url = PlanCalendarPlanner.url(for: session.id)
@@ -299,6 +319,13 @@ final class AppleCalendarSync {
                 }
                 continue
             }
+            // The plan moved, not the event: the copy below puts the event where the plan says.
+            // Without this the old slot won, and a session moved in the app — or by the server,
+            // once done on another day — was sent back to where it had been.
+            guard AppleCalendarPull.eventWasMoved(
+                event: ekEvent.startDate,
+                lastWritten: writtenStarts[session.id].map(Date.init(timeIntervalSince1970:))
+            ) else { continue }
             guard let planStart = AppleCalendarPull.planStart(for: session, calendar: calendar) else { continue }
             let resolved = AppleCalendarPull.resolveStart(plan: planStart, event: ekEvent.startDate)
             guard AppleCalendarPull.scheduleDiffers(plan: planStart, resolved: resolved) else { continue }
@@ -363,6 +390,19 @@ final class AppleCalendarSync {
             }
         }
         defaults.set(Array(ids), forKey: Self.syncedSessionIdsKey)
+    }
+
+    /// Only the sessions in the window are kept, so the record never grows; a session whose
+    /// pull-back is still owed keeps its old mark, or the move would be forgotten.
+    private func persistWrittenStarts(afterWriting wanted: [PlanCalendarEvent], keeping kept: Set<String>) {
+        let previous = (defaults.dictionary(forKey: Self.writtenStartsKey) as? [String: Double]) ?? [:]
+        var starts = previous.filter { kept.contains($0.key) }
+        for event in wanted {
+            if let id = AppleCalendarPull.sessionId(fromSharpitURL: event.url) {
+                starts[id] = event.start.timeIntervalSince1970
+            }
+        }
+        defaults.set(starts, forKey: Self.writtenStartsKey)
     }
 
     private func persistClearedSessionIds(_ ids: Set<String>) {
