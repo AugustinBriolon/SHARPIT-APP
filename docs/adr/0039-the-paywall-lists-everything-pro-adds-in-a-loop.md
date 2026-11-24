@@ -31,6 +31,10 @@ and a half lines (`ProPerkConveyor`).
   dies down, the list rests two seconds, then the rise eases back in over 1.6 s (its speed
   follows a smoothstep, so it never starts with a step). The offset is wrapped to one length of the list, and two copies are drawn so the window
   is always full.
+- The two copies are drawn once into one layer (`drawingGroup`) that slides, compared rather
+  than rebuilt on each tick, at a row height of whole points, with no animation allowed on its
+  offset. Moved as live text, the lines were rasterised again on every frame at a fractional
+  position, and the wrap could ride an animation running around it: both showed as small jumps.
 - Under Reduce Motion or at the accessibility text sizes the column is the plain list, and
   VoiceOver always reads the plain list.
 - No haptic: nothing here is a notch under the finger.

@@ -101,19 +101,24 @@ struct ProPerkConveyor: View {
     }
 
     private var conveyor: some View {
-        let length = Double(rowHeight) * Double(perks.count)
+        // Whole points: a fractional row lands on a rounded pixel, and the copy under it would
+        // then start a hair off where the wrap expects it.
+        let row = rowHeight.rounded()
+        let length = Double(row) * Double(perks.count)
         return TimelineView(.animation) { context in
             let offset = ConveyorLoop.wrapped(position(at: context.date), length: length)
-            // Two copies, so the window is always full whatever part of the list it shows.
-            VStack(spacing: 0) {
-                ForEach(0..<2, id: \.self) { _ in
-                    ForEach(perks) { perk in
-                        ProPerkRow(perk: perk).frame(height: rowHeight)
-                    }
-                }
-            }
-            .offset(y: -offset)
-            .frame(height: rowHeight * Self.visibleRows, alignment: .top)
+            ProPerkStrip(perks: perks, rowHeight: row)
+                // Compared, not rebuilt: the clock ticks every frame and the lines never change.
+                .equatable()
+                // Drawn once into one layer that then slides. Moved as live text, each line was
+                // laid out and rasterised again on every frame at a fractional position, which
+                // showed as small jumps.
+                .drawingGroup()
+                .offset(y: -offset)
+                .frame(height: row * Self.visibleRows, alignment: .top)
+                // The wrap is a jump of one whole list: it must never ride an animation that
+                // happens to be running around it (the arrival, a plan being chosen).
+                .transaction { $0.animation = nil }
         }
         .clipped()
         // The lines come out of the sheet and go back into it, never cut by an edge.
@@ -151,6 +156,22 @@ struct ProPerkConveyor: View {
                 dragOrigin = nil
                 dragTravel = 0
             }
+    }
+}
+
+/// The list twice over, so the window is always full whatever part of it shows.
+private struct ProPerkStrip: View, Equatable {
+    let perks: [ProPerkLine]
+    let rowHeight: CGFloat
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ForEach(0..<2, id: \.self) { _ in
+                ForEach(perks) { perk in
+                    ProPerkRow(perk: perk).frame(height: rowHeight)
+                }
+            }
+        }
     }
 }
 
