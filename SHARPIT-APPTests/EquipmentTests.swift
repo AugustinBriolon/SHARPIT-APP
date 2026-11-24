@@ -58,17 +58,16 @@ import UIKit
     #expect(homeItemsWithBodyweight.contains(where: { $0.id == "strength_weighted_vest" }))
 }
 
-@Test func strengthVenueTogglesDeriveWireValue() {
-    #expect(V1AthleteEquipment.StrengthVenue.from(toggles: [.gym]) == .gym)
-    #expect(V1AthleteEquipment.StrengthVenue.from(toggles: [.home]) == .home)
-    #expect(V1AthleteEquipment.StrengthVenue.from(toggles: [.gym, .home]) == .both)
-    #expect(V1AthleteEquipment.StrengthVenue.from(toggles: [.bodyweight]) == .bodyweight)
-    #expect(V1AthleteEquipment.StrengthVenue.from(toggles: []) == .bodyweight)
-
-    #expect(V1AthleteEquipment.StrengthVenue.toggling(.home, in: .gym) == .both)
-    #expect(V1AthleteEquipment.StrengthVenue.toggling(.bodyweight, in: .both) == .bodyweight)
-    #expect(V1AthleteEquipment.StrengthVenue.toggling(.gym, in: .bodyweight) == .gym)
-    #expect(V1AthleteEquipment.StrengthVenue.toggling(.gym, in: .gym) == .bodyweight)
+@Test func whereTheAthleteLiftsIsTwoSwitchesAndBodyweightIsWhatIsLeft() {
+    typealias Venue = V1AthleteEquipment.StrengthVenue
+    #expect(Venue.training(inGym: true, atHome: false) == .gym)
+    #expect(Venue.training(inGym: false, atHome: true) == .home)
+    #expect(Venue.training(inGym: true, atHome: true) == .both)
+    // Neither place: nothing to lift with, so bodyweight — never a third switch.
+    #expect(Venue.training(inGym: false, atHome: false) == .bodyweight)
+    for venue in Venue.allCases {
+        #expect(Venue.training(inGym: venue.hasGym, atHome: venue.hasHome) == venue)
+    }
 }
 
 @Test func equipmentAndPracticedSportsDecodesFromProfileJson() throws {

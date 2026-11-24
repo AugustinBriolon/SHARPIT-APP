@@ -192,72 +192,84 @@ struct EquipmentBySport: View {
         }
     }
 
+    /// Where the athlete lifts, as two switches. No third choice for « poids du corps »: it is
+    /// what is left when neither is on, and it stays possible with both (the athlete's remark,
+    /// 2026-11-24: the three chips read as if a gym ruled bodyweight work out).
     private var venuePicker: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            LazyVGrid(
-                columns: [GridItem(.flexible(), spacing: SharpitSpacing.xs), GridItem(.flexible(), spacing: SharpitSpacing.xs)],
-                spacing: SharpitSpacing.xs
-            ) {
-                ForEach(V1AthleteEquipment.StrengthVenue.Toggle.allCases) { chip in
-                    OnboardingChoiceChip(
-                        title: chip.title,
-                        symbol: chip.symbolName,
-                        isSelected: venue.toggles.contains(chip)
-                    ) {
-                        SharpitMotion.run(SharpitMotion.selection) {
-                            onVenue(V1AthleteEquipment.StrengthVenue.toggling(chip, in: venue))
-                        }
-                    }
-                }
+        VStack(spacing: 0) {
+            EquipmentLine(
+                title: String(localized: "Accès à une salle"),
+                detail: String(localized: "Machines, racks et câbles : rien à lister."),
+                isOn: venue.hasGym,
+                onChange: { onVenue(.training(inGym: $0, atHome: venue.hasHome)) }
+            ) { EquipmentTile(symbol: "dumbbell") }
+            CliniqueDivider()
+            EquipmentLine(
+                title: String(localized: "Entraînement à la maison"),
+                detail: String(localized: "Indique plus bas ce que tu as chez toi."),
+                isOn: venue.hasHome,
+                onChange: { onVenue(.training(inGym: venue.hasGym, atHome: $0)) }
+            ) { EquipmentTile(symbol: "house") }
+            CliniqueDivider()
+            if venue == .bodyweight {
+                Text("Sans salle ni matériel, tes séances se font au poids du corps.")
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.slate)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, 14)
+                    .transition(.opacity)
             }
-            Text(venue.description)
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.slate)
-                .contentTransition(.opacity)
         }
     }
 }
 
 /// One piece of equipment as a line: its drawing, what it is, what it changes for the coach, and
-/// whether it is owned, in a word. A tap flips it.
+/// a switch that says whether it is owned.
 struct EquipmentChoiceRow: View {
     let item: EquipmentCatalogItem
     let isOwned: Bool
     let onToggle: () -> Void
 
     var body: some View {
-        Button {
-            SharpitMotion.run(SharpitMotion.selection) { onToggle() }
-        } label: {
+        EquipmentLine(title: item.label, detail: item.impact, isOn: isOwned, onChange: { _ in onToggle() }) {
+            EquipmentTile(imageName: item.imageName, symbol: item.symbolName)
+        }
+    }
+}
+
+/// A line of the kit: a tile, a name, what it changes, and the system's switch (the athlete's
+/// call, 2026-11-24, over the words « Oui » / « Non »).
+private struct EquipmentLine<Tile: View>: View {
+    let title: String
+    let detail: String
+    let isOn: Bool
+    let onChange: (Bool) -> Void
+    @ViewBuilder let tile: Tile
+
+    var body: some View {
+        Toggle(isOn: Binding(get: { isOn }, set: { value in SharpitMotion.run(SharpitMotion.selection) { onChange(value) } })) {
             HStack(alignment: .center, spacing: SharpitSpacing.sm) {
-                EquipmentThumb(item: item)
+                tile
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(item.label)
+                    Text(title)
                         .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
                         .foregroundStyle(SharpitColor.foreground)
-                    Text(item.impact)
+                    Text(detail)
                         .font(SharpitTypography.meta)
                         .foregroundStyle(SharpitColor.slate)
                         .fixedSize(horizontal: false, vertical: true)
                         .multilineTextAlignment(.leading)
                 }
-                Spacer(minLength: SharpitSpacing.xs)
-                Text(isOwned ? "Oui" : "Non")
-                    .font(SharpitTypography.system(size: 16, weight: isOwned ? .semibold : .regular, relativeTo: .callout))
-                    .foregroundStyle(isOwned ? SharpitColor.foreground : SharpitColor.slate)
-                    .contentTransition(.opacity)
             }
-            .padding(.vertical, 14)
-            .contentShape(.rect)
         }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(isOwned ? [.isButton, .isSelected] : .isButton)
+        .padding(.vertical, 14)
     }
 }
 
-/// An item's drawing in a rounded tile; its glyph on the neutral tile while it has no drawing.
-private struct EquipmentThumb: View {
-    let item: EquipmentCatalogItem
+/// A line's tile: the item's drawing, or a glyph on the neutral tile where there is none.
+private struct EquipmentTile: View {
+    var imageName: String?
+    let symbol: String
 
     @ScaledMetric(relativeTo: .callout) private var side: CGFloat = 60
     @Environment(\.colorScheme) private var colorScheme
@@ -265,7 +277,7 @@ private struct EquipmentThumb: View {
 
     var body: some View {
         Group {
-            if let drawing = UIImage(named: item.imageName) {
+            if let drawing = imageName.flatMap(UIImage.init(named:)) {
                 Image(uiImage: drawing)
                     .resizable()
                     .scaledToFill()
@@ -274,7 +286,7 @@ private struct EquipmentThumb: View {
                     .background(Color.white)
                     .colorMultiply(colorScheme == .dark ? Color(white: 0.82) : .white)
             } else {
-                Image(systemName: item.symbolName)
+                Image(systemName: symbol)
                     .font(.system(size: 22, weight: .regular))
                     .foregroundStyle(SharpitColor.foreground)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)

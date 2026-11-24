@@ -56633,6 +56633,86 @@
           }
         }
       }
+    },
+    "Accès à une salle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gym access"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accès à une salle"
+          }
+        }
+      }
+    },
+    "Machines, racks et câbles : rien à lister." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Machines, racks and cables: nothing to list."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Machines, racks et câbles : rien à lister."
+          }
+        }
+      }
+    },
+    "Entraînement à la maison" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Training at home"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entraînement à la maison"
+          }
+        }
+      }
+    },
+    "Indique plus bas ce que tu as chez toi." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set below what you have at home."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Indique plus bas ce que tu as chez toi."
+          }
+        }
+      }
+    },
+    "Sans salle ni matériel, tes séances se font au poids du corps." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "With no gym and no equipment, your sessions are bodyweight."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sans salle ni matériel, tes séances se font au poids du corps."
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

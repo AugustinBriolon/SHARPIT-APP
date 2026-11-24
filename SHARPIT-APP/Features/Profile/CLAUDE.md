@@ -37,3 +37,11 @@ inventory, no mileage per item. `SharpitScreenDemo equipment` shows it.
 (`EquipmentThumb`: `Assets.xcassets/Equipment/<item id>`, 264 px, a rounded tile on white) — all
 twenty-three; an item added without a drawing falls back on its glyph on the neutral tile. The drawings are opaque on white, so the tile stays white in dark
 mode. The page fills from the kept profile on its first frame (`docs/adr/0038`).
+
+**Matériel, switches (the athlete's call, 2026-11-24).** This replaces « Oui » / « Non » and the three
+venue chips described above. Every line of the kit ends on the system's switch (`EquipmentLine`).
+Under « Musculation », where the athlete lifts is two switch lines — « Accès à une salle » and
+« Entraînement à la maison » — mapped to the wire's `gym` / `home` / `both`
+(`StrengthVenue.training(inGym:atHome:)`); neither is `bodyweight`, said in one line under them, never
+a third choice: the chips read as if a gym ruled bodyweight work out. `ScreenSnapshotTests` pins the
+section (`equipment-strength`).

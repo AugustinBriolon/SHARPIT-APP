@@ -103,6 +103,25 @@ struct ScreenSnapshotTests {
         let panel = try answeredStretches().environment(\.dynamicTypeSize, .accessibility3)
         try await assertSnapshot(onCanvas(panel), named: "routine-panel-accessibility")
     }
+
+    /// Musculation in Matériel: where the athlete lifts as two switches, the kit as switch lines.
+    @Test func theStrengthKitIsSwitchLines() async throws {
+        try await assertSnapshot(
+            EquipmentBySport(
+                sports: [.strength], venue: .both, owned: ["strength_bench", "strength_bands"],
+                onVenue: { _ in }, onToggle: { _ in }
+            )
+            .padding(24)
+            .background(SharpitColor.card),
+            named: "equipment-strength"
+        )
+        try await assertSnapshot(
+            EquipmentBySport(sports: [.strength], venue: .bodyweight, owned: [], onVenue: { _ in }, onToggle: { _ in })
+                .padding(24)
+                .background(SharpitColor.card),
+            named: "equipment-strength-bodyweight"
+        )
+    }
 }
 
 extension UIUserInterfaceStyle: @retroactive CustomTestStringConvertible {

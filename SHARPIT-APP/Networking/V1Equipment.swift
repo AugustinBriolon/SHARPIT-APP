@@ -33,75 +33,20 @@ nonisolated struct V1AthleteEquipment: Codable, Sendable, Equatable {
             }
         }
 
-        var description: String {
-            switch self {
-            case .gym: String(localized: "Inscription en salle : machines, racks et câbles.")
-            case .home: String(localized: "Matériel à domicile uniquement.")
-            case .both: String(localized: "Salle + matériel à la maison.")
-            case .bodyweight: String(localized: "Séances au poids du corps uniquement.")
-            }
-        }
+        /// The athlete can train in a gym: its machines, racks and cables need no inventory.
+        var hasGym: Bool { self == .gym || self == .both }
+        /// The athlete trains at home, with what they list as owned.
+        var hasHome: Bool { self == .home || self == .both }
 
-        /// Chips the athlete toggles (no exclusive « Les deux » — both flags → `.both` on the wire).
-        enum Toggle: String, CaseIterable, Identifiable, Sendable {
-            case gym
-            case home
-            case bodyweight
-
-            var id: String { rawValue }
-
-            var title: String {
-                switch self {
-                case .gym: String(localized: "Salle")
-                case .home: String(localized: "Maison")
-                case .bodyweight: String(localized: "Poids du corps")
-                }
-            }
-
-            var symbolName: String {
-                switch self {
-                case .gym: "dumbbell"
-                case .home: "house"
-                case .bodyweight: "figure.cross.training"
-                }
-            }
-        }
-
-        /// Wire value from the multi-select chips.
-        static func from(toggles: Set<Toggle>) -> StrengthVenue {
-            if toggles.contains(.bodyweight) { return .bodyweight }
-            let gym = toggles.contains(.gym)
-            let home = toggles.contains(.home)
+        /// The wire value for where the athlete trains. Neither place is `bodyweight`: nothing
+        /// to train with, not a choice against the two — bodyweight work is always possible.
+        static func training(inGym gym: Bool, atHome home: Bool) -> StrengthVenue {
             switch (gym, home) {
-            case (true, true): return .both
-            case (true, false): return .gym
-            case (false, true): return .home
-            case (false, false): return .bodyweight
+            case (true, true): .both
+            case (true, false): .gym
+            case (false, true): .home
+            case (false, false): .bodyweight
             }
-        }
-
-        /// Chips that represent this wire value.
-        var toggles: Set<Toggle> {
-            switch self {
-            case .gym: [.gym]
-            case .home: [.home]
-            case .both: [.gym, .home]
-            case .bodyweight: [.bodyweight]
-            }
-        }
-
-        /// Toggle one chip: bodyweight clears salle/maison; salle/maison clear bodyweight.
-        static func toggling(_ chip: Toggle, in current: StrengthVenue) -> StrengthVenue {
-            var selected = current.toggles
-            if selected.contains(chip) {
-                selected.remove(chip)
-            } else if chip == .bodyweight {
-                selected = [.bodyweight]
-            } else {
-                selected.remove(.bodyweight)
-                selected.insert(chip)
-            }
-            return from(toggles: selected)
         }
     }
 }
