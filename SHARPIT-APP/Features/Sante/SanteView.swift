@@ -64,7 +64,7 @@ struct SanteView: View {
                             symbol: "heart.text.square",
                             detail: String(localized: "Active Apple Santé dans Paramètres → Sources de données : ton bilan se construira ici.")
                         )
-                        BloodTestsCard(tokenProvider: tokenProvider)
+                        BloodTestsCard(tokenProvider: tokenProvider, store: blood)
                             .padding(.horizontal, SharpitSpacing.pageInset)
                             .padding(.bottom, SharpitSpacing.xl)
                     }
@@ -169,7 +169,7 @@ struct SanteView: View {
                             CliniqueDivider()
                             SensitiveZonesCard(store: zones)
                             CliniqueDivider()
-                            BloodTestsCard(tokenProvider: tokenProvider, count: blood.tests.count)
+                            BloodTestsCard(tokenProvider: tokenProvider, count: blood.tests.count, store: blood)
                             biologicalAgeAccess(overview.synthesis)
                         }
                     }

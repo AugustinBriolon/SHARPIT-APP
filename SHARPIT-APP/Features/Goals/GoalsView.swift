@@ -55,7 +55,7 @@ struct GoalsView: View {
                         .revealed(hasAppeared, index: 0)
                 }
 
-                if store.goals.isEmpty && store.isLoading {
+                if store.goals.isEmpty && store.showsSkeleton {
                     // The page's own shape while the goals load: the race plate, then each section.
                     VStack(alignment: .leading, spacing: 26) {
                         NextRaceCard(goal: V1Goal.placeholderRace)
@@ -135,7 +135,8 @@ struct GoalsView: View {
 
     private func skeletonSection(_ title: String, goals: [V1Goal]) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            sectionTitle(title)
+            // The sections are known before the goals are: their names are never redacted.
+            sectionTitle(title).unredacted()
             ForEach(goals) { goal in
                 CliniqueDivider()
                 GoalCard(goal: goal)

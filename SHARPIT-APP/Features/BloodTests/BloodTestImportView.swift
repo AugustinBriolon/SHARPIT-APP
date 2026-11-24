@@ -9,10 +9,12 @@ struct BloodTestsCard: View {
     let tokenProvider: () async throws -> String
     /// The tests already kept, when the caller has read them.
     var count: Int? = nil
+    /// The caller's store, so the page opens on the tests it already read.
+    var store: BloodTestsStore? = nil
 
     var body: some View {
         NavigationLink {
-            BloodTestsView(tokenProvider: tokenProvider)
+            BloodTestsView(store: store, tokenProvider: tokenProvider)
         } label: {
             SanteLinkRow(title: String(localized: "Analyses de sang"), detail: BloodMarkerReadout.testsLine(count))
         }

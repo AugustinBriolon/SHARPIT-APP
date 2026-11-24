@@ -42,8 +42,12 @@ final class AthleteProfileStore {
         self.client = client
         self.tokenProvider = tokenProvider
         self.modelContext = modelContext
-        // A page built on a kept profile draws it on its first frame, before `load` runs.
-        hydrateFromCache()
+    }
+
+    /// The profile last kept on the iPhone, for a page that draws it on its first frame. It does
+    /// not make the store `loaded`: pages that wait for `load` before editing still read the server.
+    func keptProfile() -> V1AthleteProfile? {
+        ResponseCache.read(V1AthleteProfile.self, key: ResponseCacheKey.athleteProfile, context: modelContext)
     }
 
     var isExpertReading: Bool { profile.isExpertReading }
@@ -71,11 +75,7 @@ final class AthleteProfileStore {
 
     @discardableResult
     private func hydrateFromCache() -> Bool {
-        guard let cached = ResponseCache.read(
-            V1AthleteProfile.self,
-            key: ResponseCacheKey.athleteProfile,
-            context: modelContext
-        ) else { return false }
+        guard let cached = keptProfile() else { return false }
         profile = cached
         phase = .loaded
         return true

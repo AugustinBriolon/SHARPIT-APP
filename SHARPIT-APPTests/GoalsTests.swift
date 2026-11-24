@@ -109,6 +109,25 @@ struct StubGoalClient: GoalServing {
     #expect(again.goals.map(\.id) == ["1"])
 }
 
+@MainActor
+@Test func aGoalDeletedDoesNotComeBackFromTheKeptGoals() async throws {
+    let context = ModelContext(try SharpitPersistence.makeContainer(inMemory: true))
+    let goals = [
+        V1Goal(id: "1", title: "Course 1", kind: .race, achieved: false),
+        V1Goal(id: "2", title: "Course 2", kind: .race, achieved: false),
+    ]
+    let store = GoalStore(
+        client: StubGoalClient(stubbedGoals: goals),
+        plannedSessionClient: nil, profileClient: nil, activityClient: nil, tokenProvider: { "token" }
+    )
+    await store.load(keptIn: context)
+    #expect(!store.showsSkeleton)
+    await store.delete(id: "1")
+
+    let kept = ResponseCache.read([V1Goal].self, key: ResponseCacheKey.goals, context: context)
+    #expect(kept?.contains { $0.id == "1" } == false)
+}
+
 // MARK: - Ordering
 
 private func race(_ title: String, inDays days: Int?, priority: GoalPriority? = nil, achieved: Bool = false) -> V1Goal {

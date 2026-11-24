@@ -7,8 +7,19 @@ import SwiftData
 final class GoalStore {
     /// Every change reaches the « Prochain objectif » widget: a race added, done or deleted.
     private(set) var goals: [V1Goal] = [] {
-        didSet { if goals != oldValue { WidgetSnapshotPublisher.publish(goals) } }
+        didSet {
+            guard goals != oldValue else { return }
+            WidgetSnapshotPublisher.publish(goals)
+            // Kept on every change, a write's included, so a goal deleted never comes back
+            // from the cache at the next launch.
+            ResponseCache.write(goals, key: ResponseCacheKey.goals, context: keptContext)
+        }
     }
+    /// The goals were read at least once, from the server or from the iPhone: an empty list
+    /// is then the athlete's, not a page still loading.
+    private(set) var hasAnswer = false
+    /// Objectifs draws its skeleton only while nothing is known yet.
+    var showsSkeleton: Bool { isLoading && !hasAnswer }
     private(set) var sessions: [V1PlannedSessionItem] = []
     private(set) var activities: [V1ActivityListItem] = []
     /// Each time a goal was reached, newest first — « Réalisations récentes », at the foot of Objectifs.
@@ -139,14 +150,15 @@ final class GoalStore {
         errorMessage = nil
         defer { isLoading = false }
         if let modelContext { keptContext = modelContext }
-        if goals.isEmpty,
+        if !hasAnswer,
            let kept = ResponseCache.read([V1Goal].self, key: ResponseCacheKey.goals, context: keptContext) {
             goals = kept
+            hasAnswer = true
         }
         do {
             let token = try await tokenProvider()
             goals = try await client.goals(token: token)
-            ResponseCache.write(goals, key: ResponseCacheKey.goals, context: keptContext)
+            hasAnswer = true
 
             // Sessions and activities feed the volume stats and « Lier ma séance ».
             async let fetchedSessions = fetchSessions(token: token)
@@ -162,6 +174,8 @@ final class GoalStore {
             errorMessage = String(localized: "Session expirée")
         } catch {
             errorMessage = String(localized: "Impossible de charger les objectifs")
+            // Goals already on screen stay; the failed refresh is said once, in the toast.
+            if hasAnswer { SharpitWriteFailures.shared.reportStaleRead(String(localized: "Objectifs non actualisés.")) }
         }
     }
 

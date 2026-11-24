@@ -56367,7 +56367,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Good morning"
+            "value" : "Hello"
           }
         },
         "fr" : {
@@ -56399,7 +56399,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Good morning, %@"
+            "value" : "Hello, %@"
           }
         },
         "fr" : {
@@ -56614,6 +56614,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Index alphabétique"
+          }
+        }
+      }
+    },
+    "Objectifs non actualisés." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Goals not refreshed."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Objectifs non actualisés."
           }
         }
       }

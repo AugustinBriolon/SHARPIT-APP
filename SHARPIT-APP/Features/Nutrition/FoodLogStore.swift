@@ -128,7 +128,7 @@ final class FoodLogStore {
                 let day = try await self.client.day(trainingDayId: dayId, token: try await self.tokenProvider())
                 guard dayId == self.trainingDayId else { return false }
                 self.adopt(day)
-                self.keep(scored: true)
+                self.keep()
                 return true
             } catch is CancellationError {
                 return false
@@ -275,7 +275,7 @@ final class FoodLogStore {
             }
             guard dayId == trainingDayId else { return }
             skippedMeals = Set(stored)
-            keep(scored: true)
+            keep()
             await onChange()
         } catch {
             skippedMeals = previous
@@ -286,11 +286,15 @@ final class FoodLogStore {
     func setTargets(_ newTargets: V1NutritionTargets) async {
         let previous = targets
         targets = newTargets
+        let dayId = trainingDayId
         do {
-            targets = try await SharpitRetry.run {
-                try await client.setTargets(newTargets, trainingDayId: trainingDayId, token: try await tokenProvider())
+            let stored = try await SharpitRetry.run {
+                try await client.setTargets(newTargets, trainingDayId: dayId, token: try await tokenProvider())
             }
-            keep(scored: true)
+            // The day turned while the write was out: these targets are not this day's.
+            guard dayId == trainingDayId else { return }
+            targets = stored
+            keep()
             await onChange()
         } catch {
             targets = previous
@@ -430,10 +434,11 @@ final class FoodLogStore {
         adopt(kept)
     }
 
-    /// Keeps the day as shown, without the rows still on their way. `scored` is false when the
-    /// entries changed since the server scored them: a kept score must match its entries.
-    private func keep(scored: Bool) {
+    /// Keeps the day as shown, without the rows still on their way, and its score only while
+    /// the entries are the ones the server scored: a kept score must match its entries.
+    private func keep() {
         guard phase == .ready else { return }
+        let scored = dayHealth != nil
         let day = V1FoodLogDay(
             trainingDayId: trainingDayId,
             entries: entries.filter { !$0.isPending },
@@ -455,14 +460,14 @@ final class FoodLogStore {
     /// Reads the day again for its scores once a write landed. The entries stay as shown: the
     /// score only shows where they match what the server scored.
     private func refreshHealth() async {
-        keep(scored: false)
+        keep()
         guard !entries.contains(where: \.isPending) else { return }
         let dayId = trainingDayId
         guard let day = try? await client.day(trainingDayId: dayId, token: try await tokenProvider()),
               dayId == trainingDayId
         else { return }
         adoptHealth(day)
-        keep(scored: true)
+        keep()
     }
 
     nonisolated static func basis(of entries: [V1FoodLogEntry], meal: FoodLogMeal) -> [String] {
