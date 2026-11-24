@@ -222,6 +222,38 @@ private func history(_ name: String, weight: Double? = 60, duration: Int? = nil,
     #expect(ExercisePickerReadout.zoneNote("Tronc") == "Zone travaillée : Tronc")
 }
 
+@Test func theCatalogIsBrowsedFromAToZWhateverTheCaseOrTheAccents() {
+    func entry(_ name: String) -> ExerciseMediaCatalog.Entry { .init(id: name, name: name) }
+    let sections = ExercisePickerReadout.sections([
+        entry("Squat"), entry("élévation latérale"), entry("Abdos"), entry("3/4 sit-up"), entry("Écarté"), entry("air bike"),
+    ])
+    // No empty letter, figures after Z.
+    #expect(sections.map(\.title) == ["A", "E", "S", "#"])
+    #expect(sections[0].entries.map(\.name) == ["Abdos", "air bike"])
+    #expect(sections[1].entries.map(\.name) == ["Écarté", "élévation latérale"])
+    #expect(ExercisePickerReadout.indexTitles(hasOwn: true, sections: sections) == ["★", "A", "E", "S", "#"])
+    #expect(ExercisePickerReadout.indexTitles(hasOwn: false, sections: sections) == ["A", "E", "S", "#"])
+}
+
+@Test func theWholeCatalogIsListedOnceWhenNothingIsTyped() {
+    #expect(ExercisePickerReadout.results(query: " ", library: []).isBrowsing)
+    #expect(!ExercisePickerReadout.results(query: "squat", library: []).isBrowsing)
+    let listed = ExercisePickerReadout.browseSections.flatMap(\.entries)
+    #expect(listed.count > 1_000)
+    #expect(Set(listed.map(\.id)).count == listed.count)
+}
+
+@Test func theIndexGivesTheLetterUnderTheFinger() {
+    let titles = ["★", "A", "B", "C"]
+    #expect(ExercisePickerReadout.indexTitle(at: 0, in: titles) == "★")
+    #expect(ExercisePickerReadout.indexTitle(at: 0.3, in: titles) == "A")
+    #expect(ExercisePickerReadout.indexTitle(at: 0.99, in: titles) == "C")
+    // A finger slid past either end holds the first or the last letter.
+    #expect(ExercisePickerReadout.indexTitle(at: -0.4, in: titles) == "★")
+    #expect(ExercisePickerReadout.indexTitle(at: 1.7, in: titles) == "C")
+    #expect(ExercisePickerReadout.indexTitle(at: 0.5, in: []) == nil)
+}
+
 @Test func aSessionLeftUnsavedComesBackAsTyped() throws {
     let url = FileManager.default.temporaryDirectory.appending(path: "draft-\(UUID().uuidString).json")
     let store = ActivityDraftLocalStore(fileURL: url)

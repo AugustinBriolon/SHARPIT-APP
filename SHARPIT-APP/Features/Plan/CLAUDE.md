@@ -257,3 +257,11 @@ back as well (`PlanCalendarPlanner.lookbackDays`), a done session's event lasts 
 took, and an event is read as moved by the athlete only when it left the slot the app last wrote
 (`writtenStartsKey`, `AppleCalendarPull.eventWasMoved`): before, any gap between plan and event sent
 the session back to the event's slot, undoing a move made in the app.
+
+**The exercise picker browses (the athlete's request, 2026-11-24).** With nothing typed,
+`ExercisePickerSheet` lists « Tes exercices » (most recent first) then the whole catalog from A to Z
+(`ExercisePickerReadout.browseSections`, a letter pinned over its exercises, « # » after Z), and
+`ExerciseIndexBar` stands at the trailing edge — ★ for the athlete's own, then the letters: a tap or
+a finger sliding on it jumps to the letter, a notch at each one crossed. The field is no longer
+focused on arrival, so the list and the index are whole; typing searches as before. The catalog's
+names are the dataset's — English for most, French only where an alias exists.

@@ -91,6 +91,19 @@ enum ExerciseMediaCatalog {
         return found
     }
 
+    /// Every exercise of the catalog once, under its French alias when it has one, for the
+    /// picker's A-to-Z list. Built once: the index never changes while the app runs.
+    static let browse: [Entry] = {
+        var seen = Set<String>()
+        var entries: [Entry] = []
+        for source in [index.aliases, index.names] {
+            for (name, id) in source.sorted(by: { $0.key < $1.key }) where seen.insert(id).inserted {
+                entries.append(Entry(id: id, name: name.prefix(1).uppercased() + name.dropFirst()))
+            }
+        }
+        return entries
+    }()
+
     /// Same normalization as `@sharpit/app/lib/exercises/normalize`.
     nonisolated static func normalize(_ raw: String) -> String {
         let folded = raw.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: Locale(identifier: "en_US_POSIX"))
