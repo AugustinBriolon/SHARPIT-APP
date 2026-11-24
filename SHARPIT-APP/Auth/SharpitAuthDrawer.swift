@@ -376,7 +376,10 @@ struct SharpitAuthDrawer: View {
             .font(SharpitTypography.body)
 
             Button {
+                // The swap replaces the field and its focus with it: the keyboard stays up.
+                let wasFocused = isPasswordFocused
                 isPasswordVisible.toggle()
+                if wasFocused { isPasswordFocused = true }
             } label: {
                 Image(systemName: isPasswordVisible ? "eye.slash" : "eye")
                     .font(.system(size: 16))
