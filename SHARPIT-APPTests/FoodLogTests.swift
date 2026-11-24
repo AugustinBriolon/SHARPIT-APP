@@ -507,7 +507,27 @@ private func object(_ data: Data) throws -> [String: Any] {
     #expect(NutritionMealsMode.resolve(foodLogReady: true, foodLogEntries: 0, importedMeals: 0) == .foodLog)
     // A day imported from MyFitnessPal keeps its meals, read-only.
     #expect(NutritionMealsMode.resolve(foodLogReady: true, foodLogEntries: 0, importedMeals: 3) == .imported)
-    #expect(NutritionMealsMode.resolve(foodLogReady: false, foodLogEntries: 0, importedMeals: 0) == .none)
+    // Until the log is read, the four meals hold their place: never a lone meal that opens
+    // another page, then a list that changes under the finger.
+    #expect(NutritionMealsMode.resolve(foodLogReady: false, foodLogEntries: 0, importedMeals: 1) == .loading)
+    #expect(NutritionMealsMode.resolve(foodLogReady: false, foodLogEntries: 0, importedMeals: 0) == .loading)
+}
+
+@Test func aDayWrittenBeforeTheTargetsStillShowsItsGoalAndWhatIsLeft() throws {
+    let day = V1NutritionDay(
+        calories: 1_200, protein: 60, carbohydrates: 150, fat: 40, fiber: nil, sugar: nil,
+        complete: false, goals: nil, fuelDensity: nil, meals: []
+    )
+    var targets = V1NutritionTargets.none
+    targets.kcal = 2_000
+    targets.proteinG = 120
+    let goals = try #require(NutritionReadout.withGoals(day, targets: targets).goals)
+    #expect(goals.calories.goal == 2_000)
+    #expect(goals.calories.remaining == 800)
+    #expect(goals.protein.remaining == 60)
+    #expect(goals.fat.goal == nil)
+    // No target set: nothing invented.
+    #expect(NutritionReadout.withGoals(day, targets: .none).goals == nil)
 }
 
 // MARK: - Store

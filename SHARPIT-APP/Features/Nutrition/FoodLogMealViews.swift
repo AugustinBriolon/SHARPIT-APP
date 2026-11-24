@@ -4,15 +4,16 @@ import SwiftUI
 nonisolated enum NutritionMealsMode: Equatable {
     /// The day's own log: the four meals, each with its « + », entries editable.
     case foodLog
-    /// A day imported from MyFitnessPal (or the log not read yet): its meals, read-only.
+    /// A day imported from MyFitnessPal: its meals, read-only.
     case imported
-    /// Nothing to list.
-    case none
+    /// The log not read yet: the four meals held in place, so the page never shows a partial
+    /// list that changes under the finger once the log arrives.
+    case loading
 
     static func resolve(foodLogReady: Bool, foodLogEntries: Int, importedMeals: Int) -> NutritionMealsMode {
-        if foodLogReady && (foodLogEntries > 0 || importedMeals == 0) { return .foodLog }
-        if importedMeals > 0 { return .imported }
-        return foodLogEntries > 0 ? .foodLog : .none
+        guard foodLogReady else { return .loading }
+        // Only a day the athlete never logged in SharpIt can be an import (ADR-061).
+        return foodLogEntries == 0 && importedMeals > 0 ? .imported : .foodLog
     }
 }
 

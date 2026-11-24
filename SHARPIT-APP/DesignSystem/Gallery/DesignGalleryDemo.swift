@@ -369,7 +369,7 @@ struct ScreenDemoHost: View {
             case "nutrition", "nutrition-empty":
                 NavigationStack {
                     ScrollView {
-                        NutritionSections(
+                        DemoNutritionSections(
                             nutrition: screen == "nutrition"
                                 ? NutritionReadout.placeholderResponse
                                 : V1NutritionResponse(trainingDayId: TrainingDayId.today(now: .now), day: nil)
@@ -1413,6 +1413,17 @@ private struct DemoMealPage: View {
 
     var body: some View {
         FoodLogMealPage(store: store, meal: .lunch, flags: [])
+            .task { await store.load(trainingDayId: TrainingDayId.today(now: .now)) }
+    }
+}
+
+/// The Nutrition column with its day's log, so the meals show as they do once read.
+private struct DemoNutritionSections: View {
+    let nutrition: V1NutritionResponse
+    @State private var store = FoodLogStore(client: DemoFoodLog(), tokenProvider: { "demo" })
+
+    var body: some View {
+        NutritionSections(nutrition: nutrition, foodLog: store)
             .task { await store.load(trainingDayId: TrainingDayId.today(now: .now)) }
     }
 }

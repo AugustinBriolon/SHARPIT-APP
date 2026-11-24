@@ -127,7 +127,10 @@ struct NutritionSections: View {
         VStack(alignment: .leading, spacing: 0) {
             // A day with nothing noted is the same page at zero: the goal whole in the ring, the
             // macros empty, every meal offering « Ajouter » — never a different screen.
-            let day = nutrition.day ?? NutritionReadout.emptyDay(targets: foodLog?.targets ?? .none)
+            let day = NutritionReadout.withGoals(
+                nutrition.day ?? NutritionReadout.emptyDay(targets: foodLog?.targets ?? .none),
+                targets: foodLog?.targets ?? .none
+            )
             NutritionDayHeader(diet: nutrition.diet, isComplete: day.complete)
                 .padding(.horizontal, 24)
             NutritionEnergyPlate(day: day, dayId: nutrition.trainingDayId, keptGoal: keptGoal(day))
@@ -185,8 +188,24 @@ struct NutritionSections: View {
             }
         case .imported:
             NutritionMealsSection(meals: importedMeals, flags: flags)
-        case .none:
-            EmptyView()
+        case .loading:
+            if let foodLog, case .failed(let message) = foodLog.phase {
+                VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+                    Text(message)
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.slate)
+                    Button("Réessayer") {
+                        Task { await foodLog.load(trainingDayId: foodLog.trainingDayId, force: true) }
+                    }
+                    .font(SharpitTypography.meta.weight(.semibold))
+                    .foregroundStyle(SharpitColor.primary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            } else if let foodLog {
+                FoodLogMealsSection(store: foodLog, flags: []) { _ in }
+                    .redacted(reason: .placeholder)
+                    .allowsHitTesting(false)
+            }
         }
     }
 

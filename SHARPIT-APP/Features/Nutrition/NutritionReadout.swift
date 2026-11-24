@@ -183,6 +183,26 @@ enum NutritionReadout {
         )
     }
 
+    /// A day whose row carries no goals — written before the targets were set — read against
+    /// the athlete's targets, so « Objectif » and « Restant » never vanish once food is logged.
+    static func withGoals(_ day: V1NutritionDay, targets: V1NutritionTargets) -> V1NutritionDay {
+        guard day.goals == nil, let kcal = targets.kcal.map(Double.init) else { return day }
+        func line(_ consumed: Double, _ goal: Double?) -> V1NutritionMacro {
+            guard let goal, goal > 0 else { return V1NutritionMacro(consumed: consumed, goal: nil, remaining: nil, pct: nil) }
+            return V1NutritionMacro(consumed: consumed, goal: goal, remaining: goal - consumed, pct: min(100, consumed / goal * 100))
+        }
+        return V1NutritionDay(
+            calories: day.calories, protein: day.protein, carbohydrates: day.carbohydrates, fat: day.fat,
+            fiber: day.fiber, sugar: day.sugar, complete: day.complete,
+            goals: V1NutritionGoals(
+                calories: line(day.calories, kcal), protein: line(day.protein, targets.proteinG),
+                carbohydrates: line(day.carbohydrates, targets.carbsG), fat: line(day.fat, targets.fatG),
+                exerciseCalories: 0, calorieBudget: kcal
+            ),
+            fuelDensity: day.fuelDensity, meals: day.meals
+        )
+    }
+
     /// The page's shape while a day loads.
     static var placeholderResponse: V1NutritionResponse {
         let line = V1NutritionMacro(consumed: 1_850, goal: 2_400, remaining: 550, pct: 77)
