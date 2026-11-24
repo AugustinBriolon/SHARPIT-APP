@@ -31,3 +31,10 @@ simulator has no App Store.
 **Hors Pro.** `SharpitProTeaser` is Clinique's « hors Pro » card everywhere it stands: the
 feature's name over the Pro pill, what it does in a sentence, « Essayer Pro » in ink, a border in the
 coach's tone. It states no price: only the paywall quotes the App Store's.
+
+**Everything Pro adds, in a loop (`docs/adr/0039`, the athlete's request, 2026-11-24).** This replaces
+the four lines and the sub-paragraph described above. Under the title the paywall shows the eleven
+perks (`ProPerkLine.all`, the server's ids, a glyph in a pillar's hue and one sentence each) as a
+column rising without end in a window of four and a half lines (`ProPerkConveyor`); a finger moves it
+either way and it carries on. Plain list under Reduce Motion, at the accessibility sizes and for
+VoiceOver. No haptic. The paywall does not use `ProPerkGroup`: Réglages › Pro does.

@@ -2,7 +2,8 @@ import StoreKit
 import SwiftUI
 
 /// SharpIt Pro's one paywall, from the onboarding's first week and from every teaser, on its
-/// mock-up (`docs/adr/0035`): what Pro is in a title, four lines, two plans and one button. Every
+/// mock-up (`docs/adr/0035`): what Pro is in a title, everything it adds
+/// rising in a loop (`ProPerkConveyor`, `docs/adr/0039`), two plans and one button. Every
 /// price is the App Store's — the introductory offer only when StoreKit says this Apple Account
 /// can still take it.
 struct SharpitProPaywallSheet: View {
@@ -18,20 +19,6 @@ struct SharpitProPaywallSheet: View {
     @State private var hasLoadedOffers = false
     @State private var hasAppeared = false
     @State private var errorMessage: String?
-
-    private struct Perk: Identifiable {
-        let id: String
-        let pillar: CliniquePillar
-        let title: String
-        let detail: String
-    }
-
-    private let perks = [
-        Perk(id: "bubble.left", pillar: .coach, title: String(localized: "Coach à la demande"), detail: String(localized: "Il répond avec ta nuit, ta charge et ton plan")),
-        Perk(id: "calendar", pillar: .recovery, title: String(localized: "Plan qui se répare seul"), detail: String(localized: "Séance manquée, voyage, mauvaise nuit : il s'ajuste")),
-        Perk(id: "flame", pillar: .nutrition, title: String(localized: "Lecture de ta nutrition"), detail: String(localized: "Ce qu'il te manque avant et après chaque séance")),
-        Perk(id: "heart", pillar: .sleep, title: String(localized: "Âge biologique et bilan hebdo"), detail: String(localized: "Ta santé lue comme un check-up")),
-    ]
 
     private var monthly: Product? { store.storeProducts.first { $0.id == SharpitProProduct.monthly } }
     private var yearly: Product? { store.storeProducts.first { $0.id == SharpitProProduct.yearly } }
@@ -54,13 +41,6 @@ struct SharpitProPaywallSheet: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 12)
                     .revealed(hasAppeared, index: 1)
-                Text("Tes données restent à toi et gratuites. Pro ajoute la lecture et les décisions.")
-                    .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
-                    .foregroundStyle(SharpitColor.slate)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 12)
-                    .revealed(hasAppeared, index: 1)
-
                 // The onboarding's own week, when there is one to show.
                 if sessions != nil {
                     ProWeekHero(sessions: sessions)
@@ -68,36 +48,13 @@ struct SharpitProPaywallSheet: View {
                         .revealed(hasAppeared, index: 2)
                 }
 
-                VStack(spacing: 0) {
-                    ForEach(Array(perks.enumerated()), id: \.element.id) { index, perk in
-                        CliniqueDivider()
-                        HStack(spacing: 18) {
-                            Image(systemName: perk.id)
-                                .font(.system(size: 19, weight: .regular))
-                                .foregroundStyle(perk.pillar.color)
-                                .frame(width: 24)
-                                .accessibilityHidden(true)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(perk.title)
-                                    .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .callout))
-                                    .foregroundStyle(SharpitColor.foreground)
-                                Text(perk.detail)
-                                    .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .footnote))
-                                    .foregroundStyle(SharpitColor.slate)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
-                            Spacer(minLength: 0)
-                        }
-                        .padding(.vertical, 13)
-                        .accessibilityElement(children: .combine)
-                        .revealed(hasAppeared, index: 2 + index)
-                    }
-                }
-                .padding(.top, 20)
+                ProPerkConveyor()
+                    .padding(.top, 20)
+                    .revealed(hasAppeared, index: 2)
 
                 plans
                     .padding(.top, 20)
-                    .revealed(hasAppeared, index: 6)
+                    .revealed(hasAppeared, index: 3)
             }
             .padding(.horizontal, 24)
             .padding(.top, 56)
