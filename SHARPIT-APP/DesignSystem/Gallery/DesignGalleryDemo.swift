@@ -832,7 +832,9 @@ struct ScreenDemoHost: View {
                 }
             default:
                 TabView {
-                    Tab { TodayView() } label: { SharpitTabLabel(String(localized: "Résumé"), systemImage: "house") }
+                    Tab {
+                        TodayView(client: DemoToday(), tokenProvider: { "demo" }, nutritionClient: DemoNutrition())
+                    } label: { SharpitTabLabel(String(localized: "Résumé"), systemImage: "house") }
                     Tab {
                         PlanView(
                             client: DemoPlan(), linker: PlannedSessionClient(),
@@ -1012,6 +1014,53 @@ private enum StressDemo {
 
 /// A week of prescriptions around today — two missed, today's key session, a brick ahead — to
 /// check Plan's rows without an account, beside the sessions `DemoActivities` records.
+/// A whole morning for Résumé: the fixture's verdict, a proposal waiting, the week's regularity
+/// and the day's rail, so the page reads as an athlete's does.
+private struct DemoToday: TodayServing {
+    func today(trainingDayId: String, token: String) async throws -> V1TodayResponse {
+        var day = try await FixtureTodayClient().today(trainingDayId: trainingDayId, token: token)
+        day.sessions.append(V1TodaySession(
+            id: "s2", kind: .done, title: String(localized: "Mobilité 15 min"), subtitle: String(localized: "Renforcement"),
+            metrics: [V1TodayMetric(label: String(localized: "Durée"), value: "15", unit: "min")], sport: String(localized: "Renforcement")
+        ))
+        let calendar = Calendar.current
+        let weekday = (calendar.component(.weekday, from: .now) + 5) % 7
+        day.consistency = V1TodayConsistency(
+            days: (0..<7).map { index in
+                let date = calendar.date(byAdding: .day, value: index - weekday, to: .now) ?? .now
+                return V1TodayConsistencyDay(
+                    date: date.formatted(.iso8601.year().month().day()),
+                    weekdayLabel: String(date.formatted(.dateTime.weekday(.narrow))),
+                    dayOfMonth: calendar.component(.day, from: date),
+                    hasActivity: index < weekday ? index != 1 : index == weekday,
+                    isToday: index == weekday, isFuture: index > weekday
+                )
+            },
+            thisWeekSessionCount: 3
+        )
+        day.morningProposal = V1TodayMorningProposal(
+            checkInDone: false, decisionId: "d", sessionId: "s1", direction: .down,
+            changeSummary: String(localized: "Seuil raccourci à 30 min"),
+            why: String(localized: "Ta VFC est sous ta moyenne et la nuit a été courte."),
+            from: .init(intensityLabel: String(localized: "Seuil"), durationMin: 40, description: nil),
+            to: .init(intensityLabel: String(localized: "Endurance"), durationMin: 30, description: nil)
+        )
+        day.timeline = [
+            V1DayTimelineEvent(kind: "wake", minuteOfDay: 422, title: String(localized: "Réveil"), detail: String(localized: "7 h 32 de sommeil")),
+            V1DayTimelineEvent(kind: "meal", minuteOfDay: 465, title: String(localized: "Petit-déjeuner"), detail: "520 kcal"),
+            V1DayTimelineEvent(kind: "session", minuteOfDay: 750, title: String(localized: "Mobilité 15 min"), detail: String(localized: "Faite"), state: "done"),
+            V1DayTimelineEvent(kind: "session", minuteOfDay: 1080, title: String(localized: "Seuil 40 min"), detail: String(localized: "Prévue"), state: "planned"),
+        ]
+        return day
+    }
+}
+
+private struct DemoNutrition: NutritionServing {
+    func nutrition(trainingDayId: String, token: String) async throws -> V1NutritionResponse {
+        await MainActor.run { NutritionReadout.placeholderResponse }
+    }
+}
+
 private struct DemoPlan: PlannedSessionServing {
     func plannedSessions(from: Date, to: Date, token: String) async throws -> [V1PlannedSessionItem] {
         let calendar = Calendar.current

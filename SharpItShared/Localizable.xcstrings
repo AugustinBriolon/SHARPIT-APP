@@ -3413,6 +3413,22 @@
         }
       }
     },
+    "%lld repas" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meals: %lld"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld repas"
+          }
+        }
+      }
+    },
     "%lld repères" : {
       "localizations" : {
         "en" : {
@@ -5266,6 +5282,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "30 min à 1 h"
+          }
+        }
+      }
+    },
+    "7 h 32 de sommeil" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "7 h 32 of sleep"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "7 h 32 de sommeil"
           }
         }
       }
@@ -13756,6 +13788,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chargement…"
+          }
+        }
+      }
+    },
+    "Check-in du matin" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Morning check-in"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check-in du matin"
           }
         }
       }
@@ -32620,6 +32668,22 @@
         }
       }
     },
+    "Mobilité 15 min" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mobility 15 min"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mobilité 15 min"
+          }
+        }
+      }
+    },
     "Mobilité seule" : {
       "localizations" : {
         "en" : {
@@ -46233,6 +46297,22 @@
         }
       }
     },
+    "Seuil raccourci à 30 min" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Threshold cut to 30 min"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seuil raccourci à 30 min"
+          }
+        }
+      }
+    },
     "Seuil vélo à 280 W" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -48749,6 +48829,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ta VFC est revenue dans ta moyenne : on remet un peu d'intensité avant le week-end long."
+          }
+        }
+      }
+    },
+    "Ta VFC est sous ta moyenne et la nuit a été courte." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your HRV is below your average and the night was short."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ta VFC est sous ta moyenne et la nuit a été courte."
           }
         }
       }
