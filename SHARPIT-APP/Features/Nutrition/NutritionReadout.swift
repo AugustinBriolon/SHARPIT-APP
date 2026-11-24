@@ -147,7 +147,7 @@ enum NutritionReadout {
 
     /// `3 repas`, `1 repas`, `Aucun repas`.
     static func mealsCount(_ count: Int) -> String {
-        count == 0 ? String(localized: "Aucun repas") : "\(count) repas"
+        count == 0 ? String(localized: "Aucun repas") : String(localized: "\(count) repas")
     }
 
     /// The SF Symbol for a meal, by the food log's meal key.
