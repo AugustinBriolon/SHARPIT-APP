@@ -400,8 +400,7 @@ struct CoachView: View {
 
     /// Only while nothing is said or being said: an empty thread, an empty field, nothing joined.
     private var showsSuggestions: Bool {
-        store.isEmpty && store.draft.isEmpty && store.pendingContext == nil
-            && !showsQuickActions && !dictation.isListening
+        store.isEmpty && store.draft.isEmpty && store.pendingContext == nil && !dictation.isListening
     }
 
     private var showsQuotaNotice: Bool {
@@ -423,13 +422,14 @@ struct CoachView: View {
                     .foregroundStyle(SharpitColor.statusWatchForeground)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
-            if showsQuickActions, !dictation.isListening {
-                quickActionsPanel
-            }
             if showsSuggestions {
                 // An empty thread stays bare: three ways in, low, where the thumb is. No rules, no card.
                 CoachQuickActionList(actions: CoachQuickAction.suggested, showsDividers: false, onPick: start, inset: SharpitSpacing.xs)
                     .transition(.opacity)
+            }
+            // Against the box, so the card grows out of its « + ».
+            if showsQuickActions, !dictation.isListening {
+                quickActionsPanel
             }
 
             SharpitGlassGroup { composerBox }
@@ -473,7 +473,9 @@ struct CoachView: View {
             }
 
             TextField(
-                store.hasPendingApproval ? String(localized: "Réponds à la proposition, ou écris pour l'ignorer") : String(localized: "Écris au coach"),
+                store.hasPendingApproval
+                    ? String(localized: "Réponds à la proposition, ou écris pour l'ignorer")
+                    : store.pendingContext?.prompt ?? String(localized: "Écris au coach"),
                 text: $store.draft,
                 axis: .vertical
             )
@@ -557,10 +559,10 @@ struct CoachView: View {
         // Capped and scrolled: at the largest text the five choices ran past the top of the screen.
         Group {
             if typeSize.isAccessibilitySize {
-                ScrollView { CoachQuickActionList(onPick: start) }
+                ScrollView { CoachQuickActionList(actions: panelActions, onPick: start) }
                     .frame(height: 320)
             } else {
-                CoachQuickActionList(onPick: start)
+                CoachQuickActionList(actions: panelActions, onPick: start)
             }
         }
         .padding(.vertical, SharpitSpacing.xxs)
@@ -570,11 +572,19 @@ struct CoachView: View {
             RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(SharpitColor.outline, lineWidth: 1)
         }
         .sharpitShadow(.control)
-        .transition(.scale(scale: 0.92, anchor: .bottomLeading).combined(with: .opacity))
+        // Grows a little out of the « + », leaves by fading: faster out than in, never sucked back.
+        .transition(.asymmetric(
+            insertion: .scale(scale: 0.96, anchor: .bottomLeading).combined(with: .opacity),
+            removal: .opacity
+        ))
+    }
+
+    /// On an empty thread the three suggestions stay above the box: the « + » adds the others only.
+    private var panelActions: [CoachQuickAction] {
+        CoachQuickAction.panel(showingSuggestions: store.isEmpty && store.draft.isEmpty && store.pendingContext == nil)
     }
 
     private func start(_ action: CoachQuickAction) {
-        store.draft = action.draft
         SharpitMotion.run(SharpitMotion.selection) {
             store.attach(action.context(trainingDayId: TrainingDayId.today()))
             showsQuickActions = false

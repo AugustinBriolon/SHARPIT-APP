@@ -39,6 +39,23 @@ nonisolated struct CoachDiscussContext: Equatable, Hashable, Sendable, Identifia
     let target: CoachDiscussTarget
     /// What is attached, in the athlete's words.
     let label: String
+    /// The tag's glyph; nil reads the kind's.
+    var symbol: String? = nil
+    /// The field's placeholder while this is attached; nil keeps the composer's own.
+    var prompt: String? = nil
+
+    /// The glyph the tag shows: the action's own, else one per kind.
+    var tagSymbol: String {
+        if let symbol { return symbol }
+        return switch target {
+        case .today: "sun.max"
+        case .morningBrief: "sunrise"
+        case .plannedSession: "figure.run"
+        case .activity: "checkmark.circle"
+        case .planning: "calendar"
+        case .nutrition: "fork.knife"
+        }
+    }
 
     var id: String { "\(target.kind)-\(label)" }
     var kind: String { target.kind }

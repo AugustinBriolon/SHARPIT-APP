@@ -12,40 +12,38 @@ struct CoachContextTag: View {
     var onDismiss: (() -> Void)?
 
     var body: some View {
-        HStack(spacing: SharpitSpacing.xs) {
-            // Clinique: a plain slate glyph. The ink disc with its lime clip was the earlier brand's.
-            Image(systemName: "paperclip")
-                .font(.system(size: 13, weight: .semibold))
+        HStack(spacing: 6) {
+            Image(systemName: context.tagSymbol)
+                .font(SharpitTypography.meta)
                 .foregroundStyle(SharpitColor.slate)
-                .frame(width: 24, height: 24)
                 .accessibilityHidden(true)
 
             Text(context.label)
-                .font(SharpitTypography.body)
+                .font(SharpitTypography.meta.weight(.medium))
                 .foregroundStyle(SharpitColor.foreground)
                 .lineLimit(1)
 
             if let onDismiss {
                 Button(action: onDismiss) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(.system(size: 10, weight: .semibold))
                         .foregroundStyle(SharpitColor.slate)
-                        .frame(width: 24, height: 24)
-                        .background(SharpitColor.divider, in: Circle())
                         .frame(width: SharpitSpacing.minimumTouchTarget, height: SharpitSpacing.minimumTouchTarget)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.sharpitPressable)
-                .padding(.trailing, -SharpitSpacing.xs)
+                // The touch target overflows the tag; the glyph sits where the tag ends.
+                .padding(.vertical, -12)
+                .padding(.horizontal, -14)
                 .accessibilityLabel("Retirer le contexte")
             }
         }
-        .padding(.leading, SharpitSpacing.xs)
-        .padding(.trailing, onDismiss == nil ? SharpitSpacing.sm : SharpitSpacing.xxs)
-        .padding(.vertical, SharpitSpacing.xxs)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
         .background {
+            // Flat: a soft fill, no outline — the tag names, it does not ask to be pressed.
             if isInline {
-                Capsule().fill(SharpitColor.card).overlay(Capsule().strokeBorder(SharpitColor.outline, lineWidth: 1))
+                Capsule().fill(SharpitColor.muted)
             } else {
                 Capsule().fill(SharpitColor.tile).sharpitShadow(.control)
             }

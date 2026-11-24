@@ -15,10 +15,24 @@ struct CoachQuickActionTests {
         #expect(context.target == .nutrition(trainingDayId: "2026-10-23"))
     }
 
-    @Test func everyActionOpensAnUnfinishedSentence() {
+    @Test func aPickTagsTheConversationWithTheActionsOwnNameAndGlyph() {
         for action in CoachQuickAction.allCases {
-            #expect(!action.draft.trimmingCharacters(in: .whitespaces).isEmpty)
-            #expect(action.draft.last == " ")
+            let context = action.context(trainingDayId: "2026-10-23")
+            #expect(context.label == action.label)
+            #expect(context.tagSymbol == action.symbol)
+            #expect(context.prompt?.isEmpty == false)
         }
+    }
+
+    @Test func theLinesAboveTheBoxAreNeverRepeatedInThePlus() {
+        let panel = CoachQuickAction.panel(showingSuggestions: true)
+        #expect(panel == [.timeOff, .nutrition])
+        #expect(Set(panel).isDisjoint(with: CoachQuickAction.suggested))
+        #expect(CoachQuickAction.panel(showingSuggestions: false) == CoachQuickAction.allCases)
+    }
+
+    @Test func everyActionHasItsOwnGlyph() {
+        let symbols = CoachQuickAction.allCases.map(\.symbol)
+        #expect(Set(symbols).count == symbols.count)
     }
 }
