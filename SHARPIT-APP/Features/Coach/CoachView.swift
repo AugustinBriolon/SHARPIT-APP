@@ -1,3 +1,4 @@
+import ClerkKit
 import SwiftUI
 import UIKit
 
@@ -12,6 +13,8 @@ import UIKit
 struct CoachView: View {
     @Environment(ShellRouter.self) private var router
     @Environment(\.scenePhase) private var scenePhase
+    /// Who to greet; absent in the Debug demos, which have no account.
+    @Environment(Clerk.self) private var clerk: Clerk?
     @State private var store: CoachStore
     @State private var showingHistory = false
     /// What the coach keeps about the athlete — free context, trips, constraints — moved here
@@ -83,10 +86,15 @@ struct CoachView: View {
             .navigationBarTitleDisplayMode(.inline)
             .modifier(LiquidNavChrome())
             .toolbar {
+                // No name in the bar (the athlete's call, 2026-11-24): the tab says where this is.
+                // The conversations on the left — the past ones, a new one — what the coach
+                // keeps and spends on the right.
                 ToolbarItem(placement: .principal) { Text("") }
-                SharpitBarTitle(String(localized: "Coach"))
-                // A new conversation first, the list of actions after it, on the right as everywhere.
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .topBarLeading) {
+                    barButton("Conversations", symbol: "clock.arrow.circlepath") { showingHistory = true }
+                }
+                SharpitBarGap(placement: .topBarLeading)
+                ToolbarItem(placement: .topBarLeading) {
                     Button {
                         store.startNewConversation()
                     } label: {
@@ -96,32 +104,12 @@ struct CoachView: View {
                     // would land in the conversation the athlete just walked out of.
                     .disabled(store.isEmpty || store.isReplying)
                 }
-                SharpitBarGap()
-                // The list of actions — conversations, memory, usage — on the right, as everywhere.
                 ToolbarItem(placement: .topBarTrailing) {
-                    Menu {
-                        Button {
-                            composerIsFocused = false
-                            showingHistory = true
-                        } label: {
-                            Label("Conversations", systemImage: "clock.arrow.circlepath")
-                        }
-                        Button {
-                            composerIsFocused = false
-                            showingMemory = true
-                        } label: {
-                            Label("Mémoire", systemImage: "brain.head.profile")
-                        }
-                        Button {
-                            composerIsFocused = false
-                            showingUsage = true
-                        } label: {
-                            Label("Consommation", systemImage: "gauge.with.dots.needle.33percent")
-                        }
-                    } label: {
-                        Label("Actions", systemImage: "ellipsis")
-                    }
-                    .disabled(tokenProvider == nil)
+                    barButton("Mémoire", symbol: "brain.head.profile") { showingMemory = true }
+                }
+                SharpitBarGap()
+                ToolbarItem(placement: .topBarTrailing) {
+                    barButton("Consommation", symbol: "gauge.with.dots.needle.33percent") { showingUsage = true }
                 }
             }
             .sheet(isPresented: $showingMemory) {
@@ -204,7 +192,7 @@ struct CoachView: View {
             // was scrolled to whenever a row it had not laid out changed.
             VStack(alignment: .leading, spacing: SharpitSpacing.md) {
                 if store.isEmpty {
-                    CoachEmptyState()
+                    CoachEmptyState(greeting: CoachGreeting.text(now: .now, firstName: clerk?.user?.firstName))
                 }
                 ForEach(turns.earlier) { message in
                     messageRow(message)
@@ -383,6 +371,17 @@ struct CoachView: View {
     /// The composer's one height — the smallest tappable size, for the field and both circles.
     private static let controlHeight = SharpitSpacing.minimumTouchTarget
 
+    /// A bar button that opens one of the coach's sheets, the keyboard put away first.
+    private func barButton(_ title: LocalizedStringKey, symbol: String, open: @escaping () -> Void) -> some View {
+        Button {
+            composerIsFocused = false
+            open()
+        } label: {
+            Label(title, systemImage: symbol)
+        }
+        .disabled(tokenProvider == nil)
+    }
+
     @ViewBuilder
     private var composer: some View {
         if store.needsPro {
@@ -427,12 +426,19 @@ struct CoachView: View {
                 CoachQuickActionList(actions: CoachQuickAction.suggested, showsDividers: false, onPick: start, inset: SharpitSpacing.xs)
                     .transition(.opacity)
             }
-            // Against the box, so the card grows out of its « + ».
-            if showsQuickActions, !dictation.isListening {
-                quickActionsPanel
-            }
-
             SharpitGlassGroup { composerBox }
+                // Over the box and whatever stands above it, never between them: the card
+                // opening must not push the suggestions up (the athlete's remark, 2026-11-24).
+                .overlay(alignment: .top) {
+                    // A line on the box's top edge: the card hangs from it, upward.
+                    Color.clear.frame(height: 0).overlay(alignment: .bottom) {
+                        if showsQuickActions, !dictation.isListening {
+                            quickActionsPanel
+                                .fixedSize(horizontal: false, vertical: true)
+                                .padding(.bottom, SharpitSpacing.xs)
+                        }
+                    }
+                }
 
             if showsQuotaNotice, let quota = store.quota, let line = CoachQuotaReadout.line(quota) {
                 quotaLine(quota, line: line)
@@ -951,24 +957,33 @@ nonisolated enum CoachSegment: Identifiable, Equatable {
     }
 }
 
+/// A new conversation opens on a greeting and nothing else: the ways in stand above the box.
 private struct CoachEmptyState: View {
+    let greeting: String
+
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            Text("Demande ce que tu veux comprendre")
-                .font(SharpitTypography.sectionTitle)
-                .tracking(SharpitTypography.sectionTitleTracking)
-                .foregroundStyle(SharpitColor.foreground)
-            Text(
-                String(localized: """
-                Une séance, ta semaine, un signal du jour. \
-                Depuis un écran, le bouton « discuter » joint le sujet à ta question.
-                """)
-            )
-            .font(SharpitTypography.body)
-            .foregroundStyle(SharpitColor.slate)
+        Text(greeting)
+            .font(SharpitTypography.system(size: 30, weight: .semibold, relativeTo: .title))
+            .tracking(-0.6)
+            .foregroundStyle(SharpitColor.foreground)
             .fixedSize(horizontal: false, vertical: true)
+            .accessibilityAddTraits(.isHeader)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// « Bonjour, Léa » by day, « Bonsoir, Léa » from 18:00 until 5:00; the word alone without a name.
+nonisolated enum CoachGreeting {
+    static func text(now: Date, firstName: String?, calendar: Calendar = .current) -> String {
+        let hour = calendar.component(.hour, from: now)
+        let isEvening = hour >= 18 || hour < 5
+        let name = firstName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        switch (isEvening, name.isEmpty) {
+        case (false, true): return String(localized: "Bonjour")
+        case (true, true): return String(localized: "Bonsoir")
+        case (false, false): return String(localized: "Bonjour, \(name)")
+        case (true, false): return String(localized: "Bonsoir, \(name)")
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

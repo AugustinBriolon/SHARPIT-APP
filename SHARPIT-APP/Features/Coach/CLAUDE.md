@@ -134,3 +134,11 @@ just over the box — no rule, no card — gone as soon as something is typed, j
 open; no arrow down there. The subject's tag is Clinique: a slate clip, the label, its cross — the
 ink disc with a lime clip was the earlier brand's. Unchanged rules: nothing animates as the page opens, no bounce, no haptic,
 `SharpitMotion` only.
+
+**Bar, greeting, « + » (the athlete's call, 2026-11-24).** This replaces what is said above about
+the bar's name, its « ⋯ » menu and the empty thread's text. The bar carries no name: Conversations
+and « nouvelle conversation » on the left, Mémoire and Consommation on the right, each its own
+button. An empty thread opens on a greeting alone (`CoachGreeting`: « Bonjour, Léa », « Bonsoir, Léa »
+from 18:00 to 5:00, the word alone without a first name — Clerk's). The « + » card is an overlay
+anchored over the box, no longer a row of the composer: opening it covers the suggestions and never
+moves them.
