@@ -265,7 +265,6 @@ struct SharpitSelectField<Value: Hashable>: View {
             Menu {
                 ForEach(options, id: \.value) { option in
                     Button(option.label) {
-                        SharpitHaptics.play(.notch(major: false))
                         selection = option.value
                     }
                 }

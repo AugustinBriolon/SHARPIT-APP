@@ -116,7 +116,6 @@ struct OnboardingMotivationStep: View {
                     detail: OnboardingMotivation.detail(feature),
                     isSelected: store.motivations.contains(feature)
                 ) {
-                    SharpitHaptics.play(.notch(major: false))
                     SharpitMotion.run(SharpitMotion.selection) { store.toggleMotivation(feature) }
                 }
             }
@@ -621,7 +620,6 @@ struct OnboardingInjuriesStep: View {
 
     /// A declared zone opens as declared; a new one starts on the side touched.
     private func open(_ spot: SensitiveZoneBody.Spot) {
-        SharpitHaptics.play(.notch(major: false))
         editing = store.injuries.first { $0.bodyPart == spot.part }
             ?? OnboardingInjuryDraft(bodyPart: spot.part, side: OnboardingInjuryDraft.Side(rawValue: spot.side.rawValue))
     }
@@ -799,7 +797,6 @@ private struct OnboardingInjuryRow: View {
     }
 
     private func triggerRemove() {
-        SharpitHaptics.play(.notch(major: true))
         withAnimation(.spring(response: 0.28, dampingFraction: 0.88)) {
             offset = -400
         }

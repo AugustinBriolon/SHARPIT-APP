@@ -1009,7 +1009,6 @@ struct GuidedStrengthWorkoutView: View {
                 ForEach(SessionFeeling.allCases) { option in
                     let selected = feeling == option
                     Button {
-                        SharpitHaptics.play(.notch(major: false))
                         SharpitMotion.run(SharpitMotion.selection) {
                             feeling = option
                         }
