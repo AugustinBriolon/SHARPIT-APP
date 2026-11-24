@@ -94,7 +94,7 @@ nonisolated enum DemoDataset {
       { "id": "m1", "type": "TRAVEL", "label": "Déplacement pro", "locationLabel": "Lyon",
         "startDate": "2026-11-17T00:00:00.000Z", "endDate": "2026-11-19T00:00:00.000Z",
         "note": "Sans vélo", "trainingConstraint": "REDUCED", "isActive": true },
-      { "id": "m2", "type": "TRAVEL", "label": "Vacances", "locationLabel": "Lisbonne",
+      { "id": "m2", "type": "TRAVEL", "label": "\#(String(localized: "Vacances"))", "locationLabel": "\#(String(localized: "Lisbonne"))",
         "startDate": "2026-11-28T00:00:00.000Z", "endDate": "2026-12-02T00:00:00.000Z",
         "note": "Piscine sur place", "trainingConstraint": "FULL", "isActive": true },
       { "id": "m3", "type": "CONSTRAINT", "label": "Semaine chargée", "locationLabel": null,

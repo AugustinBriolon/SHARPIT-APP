@@ -4,7 +4,8 @@ import SwiftUI
 /// The coach on a scripted answer, to check how the thread moves in the simulator without an
 /// account: a question rises to the top, the answer unrolls without moving the view, and the
 /// arrow down appears once it runs past the screen. Debug builds only: `-SharpitCoachDemo`;
-/// `-SharpitCoachCardsDemo` ends each answer with a workout card and follow-ups (ADR-111).
+/// `-SharpitCoachCardsDemo` ends each answer with a workout card and follow-ups (ADR-111);
+/// `-SharpitCoachOneQuestion` asks only the first question.
 enum CoachDemo {
     static var isRequested: Bool {
         ProcessInfo.processInfo.arguments.contains("-SharpitCoachDemo")
@@ -16,7 +17,9 @@ struct CoachDemoHost: View {
 
     var body: some View {
         var view = CoachView(client: DemoCoachClient(), conversations: DemoConversations(), quota: DemoQuota(), tokenProvider: { "demo" })
-        view.demoQuestions = [String(localized: "Comment était ma nuit ?"), String(localized: "Et pour jeudi, je fais quoi ?")]
+        let questions = [String(localized: "Comment était ma nuit ?"), String(localized: "Et pour jeudi, je fais quoi ?")]
+        // One question leaves the first answer and its cards on screen, for the store captures.
+        view.demoQuestions = ProcessInfo.processInfo.arguments.contains("-SharpitCoachOneQuestion") ? Array(questions.prefix(1)) : questions
         view.demoOpensQuickActions = ProcessInfo.processInfo.arguments.contains("-SharpitCoachQuickActions")
         return view.environment(router)
     }
@@ -85,21 +88,21 @@ private struct DemoCoachClient: CoachChatServing {
     /// The web's contract fixtures, streamed as the route sends them.
     private static let cards: [JSONValue] = {
         let workout: JSONValue = .object([
-            "type": .string("RUN"), "title": .string("6 × 1000 m au seuil"),
-            "purpose": .string("Relever ton seuil à six semaines du semi, sur des jambes fraîches."),
+            "type": .string("RUN"), "title": .string(String(localized: "6 × 1000 m au seuil")),
+            "purpose": .string(String(localized: "Relever ton seuil à six semaines du semi, sur des jambes fraîches.")),
             "intensity": .string("THRESHOLD"), "durationMin": .number(60), "load": .number(72),
             "endurancePrescription": .object(["blocks": .array([
                 .object(["steps": .array([.object(["kind": .string("warmup"), "minutes": .number(15), "effort": .string("ENDURANCE")])])]),
                 .object(["times": .number(6), "steps": .array([
-                    .object(["kind": .string("interval"), "meters": .number(1000), "effort": .string("THRESHOLD"), "notes": .string("Régulier, pas plus vite au dernier.")]),
+                    .object(["kind": .string("interval"), "meters": .number(1000), "effort": .string("THRESHOLD"), "notes": .string(String(localized: "Régulier, pas plus vite au dernier."))]),
                     .object(["kind": .string("recovery"), "minutes": .number(2), "effort": .string("RECOVERY")]),
                 ])]),
                 .object(["steps": .array([.object(["kind": .string("cooldown"), "minutes": .number(10), "effort": .string("RECOVERY")])])]),
             ])]),
-            "warnings": .array([.string("Ton mollet gauche était sensible mardi : arrête au moindre pincement.")]),
+            "warnings": .array([.string(String(localized: "Ton mollet gauche était sensible mardi : arrête au moindre pincement."))]),
         ])
         let followUps: JSONValue = .object(["suggestions": .array([
-            .string("Et si je n’ai que 45 min ?"), .string("Je peux la faire sur home trainer ?"),
+            .string(String(localized: "Et si je n’ai que 45 min ?")), .string(String(localized: "Je peux la faire sur home trainer ?")),
         ])])
         let drawn: JSONValue = .object(["ok": .bool(true), "schemaVersion": .number(1)])
         return [("presentWorkout", workout), ("suggestFollowUps", followUps)].flatMap { name, input in

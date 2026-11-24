@@ -229,10 +229,10 @@ struct ScreenDemoHost: View {
         let json = #"""
         {
           "apiVersion": 1, "trainingDayId": "2026-11-14", "empty": null,
-          "readinessScore": 71, "signal": { "label": "Récupération correcte", "tone": "good" },
-          "isCalibrating": false, "limiter": "Sommeil", "estimatedRecoveryDays": 1,
-          "intensity": "Modérée",
-          "rationale": ["Ton corps a encaissé hier, pas complètement. Le sommeil est ce qui te limite."],
+          "readinessScore": 71, "signal": { "label": "\#(String(localized: "Récupération correcte"))", "tone": "good" },
+          "isCalibrating": false, "limiter": "\#(String(localized: "Sommeil"))", "estimatedRecoveryDays": 1,
+          "intensity": "\#(String(localized: "Modérée"))",
+          "rationale": ["\#(String(localized: "Ton corps a encaissé hier, pas complètement. Le sommeil est ce qui te limite."))"],
           "dimensions": [
             { "key": "sleep", "score": 46, "status": "INSUFFICIENT" },
             { "key": "autonomic", "score": 55, "status": "NORMAL" },
@@ -240,8 +240,8 @@ struct ScreenDemoHost: View {
             { "key": "loadContext", "score": 82, "status": "OPTIMAL" }
           ],
           "pillars": [
-            { "key": "autonomic", "label": "Équilibre normal", "tone": "good" },
-            { "key": "load", "label": "Charge optimale", "tone": "strong" }
+            { "key": "autonomic", "label": "\#(String(localized: "Équilibre normal"))", "tone": "good" },
+            { "key": "load", "label": "\#(String(localized: "Charge optimale"))", "tone": "strong" }
           ],
           "dissonanceDetected": false,
           "today": { "hrv": 58, "restingHr": 49, "bodyBattery": 72, "hrvBaselineLow": 60, "hrvBaselineHigh": 68 },
@@ -251,7 +251,7 @@ struct ScreenDemoHost: View {
             { "date": "2026-11-14", "hrv": 58, "restingHr": 49 }
           ],
           "alerts": [], "keyEvidence": ["Sommeil sous la cible deux nuits de suite"],
-          "confidencePct": 92, "completenessLabel": "Complètes"
+          "confidencePct": 92, "completenessLabel": "\#(String(localized: "Complètes"))"
         }
         """#
         return try? JSONDecoder().decode(V1RecoveryResponse.self, from: Data(json.utf8))
@@ -318,7 +318,7 @@ struct ScreenDemoHost: View {
       "load": { "daily": 96, "weekly": 438, "acwr": 1.09, "chronicWeeklyAvg": 402, "tsb": -6, "avgWeeklyTss": 390 },
       "dimensions": [], "dominantDimension": null, "limitingFactor": null, "overreaching": null,
       "composition": { "available": false, "dominantKey": null, "contributors": [], "signals": { "steps": 9200, "stress": 28, "bodyBattery": 61 } },
-      "pmc": [], "weeklyTss": [], "confidencePct": 82, "completenessLabel": "Complètes",
+      "pmc": [], "weeklyTss": [], "confidencePct": 82, "completenessLabel": "\#(String(localized: "Complètes"))",
       "targetBand": { "algorithmVersion": "demo", "low": 11, "high": 15, "status": "within" },
       "strainPerformance": { "withinCount": 3, "dayCount": 4, "withinPct": 75, "history": [
         { "date": "2026-11-09", "strain": 6.1, "low": 5, "high": 9, "status": "within" },
@@ -431,9 +431,9 @@ struct ScreenDemoHost: View {
                                 VStack(alignment: .leading, spacing: SharpitSpacing.section) {
                                     SanteTrends(markers: SanteTrendReadout.drawable(Self.health.allMarkers))
                                     SanteTodaySection(state: SanteDayState(tiles: [
-                                        .init(caption: "Énergie", value: "64", unit: "/100", note: "D'habitude 71", fraction: 0.64, pillar: .recovery, symbol: "bolt.fill", baseline: 0.71),
-                                        .init(caption: "Stress", value: "52", unit: "/100", note: "Modéré", fraction: 0.52, pillar: .sleep, symbol: "waveform.path.ecg"),
-                                        .init(caption: "Effort visé", value: "8–13", unit: nil, note: "Atteint", fraction: 1, pillar: .nutrition, symbol: "flame.fill", status: .good),
+                                        .init(caption: String(localized: "Énergie"), value: "64", unit: "/100", note: String(localized: "D'habitude \(71)"), fraction: 0.64, pillar: .recovery, symbol: "bolt.fill", baseline: 0.71),
+                                        .init(caption: String(localized: "Stress"), value: "52", unit: "/100", note: String(localized: "Modéré"), fraction: 0.52, pillar: .sleep, symbol: "waveform.path.ecg"),
+                                        .init(caption: String(localized: "Effort visé"), value: "8–13", unit: nil, note: String(localized: "Atteint"), fraction: 1, pillar: .nutrition, symbol: "flame.fill", status: .good),
                                     ]))
                                     SanteWatchSection(items: Self.health.watch)
                                     SanteTable(title: SanteReadout.markers(Self.health.allMarkers.count), rows: Self.health.allMarkers.map(SanteTable.Row.init))
@@ -444,12 +444,12 @@ struct ScreenDemoHost: View {
                         }
                         .cliniqueSheet(wash: .sleep, height: 240)
                         .toolbar {
-                            SharpitBarTitle("Santé")
+                            SharpitBarTitle(String(localized: "Santé"))
                             ToolbarItem(placement: .topBarTrailing) { Button {} label: { Image(systemName: "square.and.arrow.up") } }
                             SharpitBarGap()
                             ToolbarItem(placement: .topBarTrailing) { Button {} label: { Image(systemName: "target") } }
                         }
-                    } } label: { SharpitTabLabel("Santé", systemImage: "heart") }
+                    } } label: { SharpitTabLabel(String(localized: "Santé"), systemImage: "heart") }
                 }
             case "journal":
                 NavigationStack {
@@ -832,16 +832,16 @@ struct ScreenDemoHost: View {
                 }
             default:
                 TabView {
-                    Tab { TodayView() } label: { SharpitTabLabel("Résumé", systemImage: "house") }
+                    Tab { TodayView() } label: { SharpitTabLabel(String(localized: "Résumé"), systemImage: "house") }
                     Tab {
                         PlanView(
                             client: DemoPlan(), linker: PlannedSessionClient(),
                             activityClient: DemoActivities(), tokenProvider: { "demo" }
                         )
-                    } label: { SharpitTabLabel("Plan", systemImage: "calendar") }
-                    Tab { Color.clear } label: { SharpitTabLabel("Coach", systemImage: "bubble.left") }
-                    Tab { Color.clear } label: { SharpitTabLabel("Activité", systemImage: "chart.line.uptrend.xyaxis") }
-                    Tab { Color.clear } label: { SharpitTabLabel("Santé", systemImage: "heart") }
+                    } label: { SharpitTabLabel(String(localized: "Plan"), systemImage: "calendar") }
+                    Tab { Color.clear } label: { SharpitTabLabel(String(localized: "Coach"), systemImage: "bubble.left") }
+                    Tab { Color.clear } label: { SharpitTabLabel(String(localized: "Activité"), systemImage: "chart.line.uptrend.xyaxis") }
+                    Tab { Color.clear } label: { SharpitTabLabel(String(localized: "Santé"), systemImage: "heart") }
                 }
             }
         }
@@ -857,7 +857,7 @@ struct ScreenDemoHost: View {
         let json = #"""
         {
           "apiVersion": 1, "trainingDayId": "2026-10-14", "nightStatus": "present", "empty": null,
-          "score": 86, "adequacy": { "key": "EXCELLENT", "label": "Ta meilleure nuit de la semaine." },
+          "score": 86, "adequacy": { "key": "EXCELLENT", "label": "\#(String(localized: "Ta meilleure nuit de la semaine."))" },
           "durationMin": 452, "targetMin": 480, "targetDeltaMin": -28, "delta7dMin": 32,
           "stages": { "deepMin": 92, "remMin": 110, "lightMin": 228, "awakeMin": 22 },
           "bedtimeMin": 1390, "wakeMin": 422,
@@ -866,7 +866,7 @@ struct ScreenDemoHost: View {
           "regularityMin": 35.4, "recommendedBedtimeMin": 1350, "recommendedDurationMin": 495,
           "debt7Min": 96, "debt14Min": 150, "recoveryNote": null,
           "history": [\#(nights)],
-          "insights": [{ "tone": "good", "title": "Sommeil profond", "detail": "32 minutes au-dessus de ton habitude." }],
+          "insights": [{ "tone": "good", "title": "\#(String(localized: "Sommeil profond"))", "detail": "\#(String(localized: "32 minutes au-dessus de ton habitude."))" }],
           "confidencePct": 74
         }
         """#
@@ -1018,12 +1018,12 @@ private struct DemoPlan: PlannedSessionServing {
         let today = calendar.startOfDay(for: .now)
         func day(_ offset: Int) -> Date { calendar.date(byAdding: .day, value: offset, to: today) ?? today }
         return [
-            V1PlannedSessionItem(id: "p1", date: day(-2), title: "Natation · Technique 2 400 m", type: "SWIM", durationMin: 55),
-            V1PlannedSessionItem(id: "p2", date: day(-1), title: "Course · Tempo 3 × 10 min", type: "RUN", durationMin: 58, isKey: true),
-            V1PlannedSessionItem(id: "p3", date: today, title: "Vélo · Seuil 2 × 12 min", type: "BIKE", durationMin: 75, isKey: true),
-            V1PlannedSessionItem(id: "p4", date: day(1), title: "Vélo", type: "BIKE", durationMin: 100, brickGroupId: "b1", brickOrder: 0),
-            V1PlannedSessionItem(id: "p5", date: day(1), title: "Course", type: "RUN", durationMin: 60, brickGroupId: "b1", brickOrder: 1),
-            V1PlannedSessionItem(id: "p6", date: day(2), title: "Course · Sortie longue", type: "RUN", durationMin: 90),
+            V1PlannedSessionItem(id: "p1", date: day(-2), title: String(localized: "Natation · Technique 2 400 m"), type: "SWIM", durationMin: 55),
+            V1PlannedSessionItem(id: "p2", date: day(-1), title: String(localized: "Course · Tempo 3 × 10 min"), type: "RUN", durationMin: 58, isKey: true),
+            V1PlannedSessionItem(id: "p3", date: today, title: String(localized: "Vélo · Seuil 2 × 12 min"), type: "BIKE", durationMin: 75, isKey: true),
+            V1PlannedSessionItem(id: "p4", date: day(1), title: String(localized: "Vélo"), type: "BIKE", durationMin: 100, brickGroupId: "b1", brickOrder: 0),
+            V1PlannedSessionItem(id: "p5", date: day(1), title: String(localized: "Course"), type: "RUN", durationMin: 60, brickGroupId: "b1", brickOrder: 1),
+            V1PlannedSessionItem(id: "p6", date: day(2), title: String(localized: "Course · Sortie longue"), type: "RUN", durationMin: 90),
         ].filter { $0.date >= from && $0.date <= to }
     }
 }
@@ -1037,14 +1037,14 @@ private struct DemoActivities: ActivityServing {
             formatter.string(from: Calendar.current.startOfDay(for: .now).addingTimeInterval(Double(-daysAgo) * 86_400 + 7 * 3_600))
         }
         let rows: [(String, String, Int, String, Int, Int)] = [
-            ("a1", "RUN", 1, "Tempo 3 × 10 min", 3_480, 72),
-            ("a2", "BIKE", 3, "Endurance 1 h 45", 6_300, 88),
-            ("a3", "SWIM", 4, "Technique 2 400 m", 3_300, 41),
-            ("a4", "STRENGTH", 6, "Gainage", 1_500, 18),
-            ("a5", "RUN", 8, "Sortie longue", 5_700, 96),
-            ("a6", "BIKE", 10, "Seuil 3 × 12 min", 5_400, 85),
-            ("a7", "RUN", 13, "Footing", 2_700, 38),
-            ("a8", "SWIM", 15, "Endurance 2 000 m", 2_900, 36),
+            ("a1", "RUN", 1, String(localized: "Tempo 3 × 10 min"), 3_480, 72),
+            ("a2", "BIKE", 3, String(localized: "Endurance 1 h 45"), 6_300, 88),
+            ("a3", "SWIM", 4, String(localized: "Technique 2 400 m"), 3_300, 41),
+            ("a4", "STRENGTH", 6, String(localized: "Gainage"), 1_500, 18),
+            ("a5", "RUN", 8, String(localized: "Sortie longue"), 5_700, 96),
+            ("a6", "BIKE", 10, String(localized: "Seuil 3 × 12 min"), 5_400, 85),
+            ("a7", "RUN", 13, String(localized: "Footing"), 2_700, 38),
+            ("a8", "SWIM", 15, String(localized: "Endurance 2 000 m"), 2_900, 36),
         ]
         let json = "[" + rows.map { id, type, daysAgo, title, duration, load in
             #"{"id":"\#(id)","type":"\#(type)","date":"\#(date(daysAgo))","title":"\#(title)","duration":\#(duration),"load":\#(load)}"#
