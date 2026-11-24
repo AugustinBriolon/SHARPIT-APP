@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 /// The last answer the app got for one request, kept so a screen can paint before the network
-/// replies (`docs/adr/0008`).
+/// replies (`docs/adr/0038`).
 ///
 /// One model for every screen rather than one per feature: the rows differ only by which
 /// request they answer, and `key` says which. Today and the journal keep their own models
@@ -36,9 +36,13 @@ nonisolated enum ResponseCacheKey {
     static let thresholdHistory = "threshold-history"
     static let healthOverview = "health-overview"
     static let sensitiveZones = "sensitive-zones"
+    static let goals = "goals"
 
     /// The day's food log as Résumé's nutrition card shows it.
     static func nutritionDay(_ trainingDayId: String) -> String { "nutrition:\(trainingDayId)" }
+
+    /// The day's food log as the Nutrition page lists it: entries, targets, recent foods.
+    static func foodLogDay(_ trainingDayId: String) -> String { "food-log:\(trainingDayId)" }
 }
 
 /// Reads and writes cached responses. Stateless, like the other repositories.

@@ -160,3 +160,9 @@ this file says quick add or « Créer une recette », that entry is gone: a reci
 logs and opens on its ingredients from « Mes aliments » (`FoodRecipePage`, edit only), and
 `FoodQuickAdd` stays as the shape of an estimated food of a described dish. The menu was not seen on
 screen (it needs a signed-in session).
+
+**The meals never load, the day is kept (`docs/adr/0038`, the athlete's remark, 2026-11-24).** The
+four meals are drawn by name at once; while a day never read is on its way only each meal's energy is
+redacted (`FoodLogMealRow.isLoading`). `FoodLogStore` keeps each day (`ResponseCacheKey.foodLogDay`),
+paints it in `init` and on a change of day, and writes it again after the server's answer and after
+every write — a page left and opened again shows the day on its first frame.

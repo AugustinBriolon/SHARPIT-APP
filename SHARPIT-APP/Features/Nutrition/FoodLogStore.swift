@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import SwiftData
 import SwiftUI
 
 /// One training day of the in-app food log (SHARPIT ADR-061): its entries by meal, the
@@ -54,6 +55,8 @@ final class FoodLogStore {
     /// One Santé mirror at a time — overlapping replaceQuantity calls would race deletes.
     @ObservationIgnored private var mirrorChain: Task<Void, Never>?
     private let loadGate = LoadGate()
+    /// Where the day's last answer is kept, so a visit paints it before the server replies.
+    private let modelContext: ModelContext?
 
     init(
         trainingDayId: String = TrainingDayId.today(now: .now),
@@ -61,14 +64,17 @@ final class FoodLogStore {
         tokenProvider: @escaping () async throws -> String,
         onChange: @escaping @MainActor () async -> Void = {},
         reportFailure: @escaping @MainActor (String) -> Void = { SharpitWriteFailures.shared.report($0) },
-        healthWriter: (any HealthWriting)? = nil
+        healthWriter: (any HealthWriting)? = nil,
+        modelContext: ModelContext? = nil
     ) {
+        self.modelContext = modelContext
         self.trainingDayId = trainingDayId
         self.client = client
         self.tokenProvider = tokenProvider
         self.onChange = onChange
         self.reportFailure = reportFailure
         self.healthWriter = healthWriter
+        paintKeptDay()
     }
 
     /// The four meals, always in the order a day is read, empty ones included.
@@ -115,17 +121,14 @@ final class FoodLogStore {
             skippedMeals = []
             phase = .loading
             loadGate.invalidate()
+            paintKeptDay()
         }
         await loadGate.run(key: dayId, force: force || dayChanged) {
             do {
                 let day = try await self.client.day(trainingDayId: dayId, token: try await self.tokenProvider())
                 guard dayId == self.trainingDayId else { return false }
-                self.entries = day.entries
-                self.targets = day.targets
-                self.recent = day.recent
-                self.skippedMeals = Set(day.skippedMeals)
-                self.adoptHealth(day)
-                self.phase = .ready
+                self.adopt(day)
+                self.keep(scored: true)
                 return true
             } catch is CancellationError {
                 return false
@@ -272,6 +275,7 @@ final class FoodLogStore {
             }
             guard dayId == trainingDayId else { return }
             skippedMeals = Set(stored)
+            keep(scored: true)
             await onChange()
         } catch {
             skippedMeals = previous
@@ -286,6 +290,7 @@ final class FoodLogStore {
             targets = try await SharpitRetry.run {
                 try await client.setTargets(newTargets, trainingDayId: trainingDayId, token: try await tokenProvider())
             }
+            keep(scored: true)
             await onChange()
         } catch {
             targets = previous
@@ -407,6 +412,39 @@ final class FoodLogStore {
         )
     }
 
+    private func adopt(_ day: V1FoodLogDay) {
+        entries = day.entries
+        targets = day.targets
+        recent = day.recent
+        skippedMeals = Set(day.skippedMeals)
+        adoptHealth(day)
+        phase = .ready
+    }
+
+    /// Shows the day as last kept on the iPhone: a visit never waits on the server for a day
+    /// already read (`docs/adr/0038`).
+    private func paintKeptDay() {
+        guard let kept = ResponseCache.read(
+            V1FoodLogDay.self, key: ResponseCacheKey.foodLogDay(trainingDayId), context: modelContext
+        ) else { return }
+        adopt(kept)
+    }
+
+    /// Keeps the day as shown, without the rows still on their way. `scored` is false when the
+    /// entries changed since the server scored them: a kept score must match its entries.
+    private func keep(scored: Bool) {
+        guard phase == .ready else { return }
+        let day = V1FoodLogDay(
+            trainingDayId: trainingDayId,
+            entries: entries.filter { !$0.isPending },
+            health: scored ? health : nil,
+            targets: targets,
+            recent: recent,
+            skippedMeals: FoodLogMeal.allCases.filter(skippedMeals.contains)
+        )
+        ResponseCache.write(day, key: ResponseCacheKey.foodLogDay(trainingDayId), context: modelContext)
+    }
+
     private func adoptHealth(_ day: V1FoodLogDay) {
         health = day.health
         healthBasis = Dictionary(uniqueKeysWithValues: FoodLogMeal.allCases.map {
@@ -417,12 +455,14 @@ final class FoodLogStore {
     /// Reads the day again for its scores once a write landed. The entries stay as shown: the
     /// score only shows where they match what the server scored.
     private func refreshHealth() async {
+        keep(scored: false)
         guard !entries.contains(where: \.isPending) else { return }
         let dayId = trainingDayId
         guard let day = try? await client.day(trainingDayId: dayId, token: try await tokenProvider()),
               dayId == trainingDayId
         else { return }
         adoptHealth(day)
+        keep(scored: true)
     }
 
     nonisolated static func basis(of entries: [V1FoodLogEntry], meal: FoodLogMeal) -> [String] {

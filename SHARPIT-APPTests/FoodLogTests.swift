@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 import Testing
 @testable import Sharpit
 
@@ -535,6 +536,8 @@ private func object(_ data: Data) throws -> [String: Any] {
 private actor StubFoodLog: FoodLogServing {
     var day = V1FoodLogDay(trainingDayId: "2026-10-01", entries: [])
     var failure: (any Error)?
+    /// Fails the day's read itself, as a dropped connection does; `failure` only fails the writes.
+    var dayFailure: (any Error)?
     private(set) var added: [FoodLogDraft] = []
     private(set) var deleted: [String] = []
     private(set) var targetsSent: [V1NutritionTargets] = []
@@ -545,9 +548,13 @@ private actor StubFoodLog: FoodLogServing {
 
     func stock(_ product: V1FoodProduct, barcode: String) { barcodeProducts[barcode] = product }
 
-    init(day: V1FoodLogDay? = nil, failure: (any Error)? = nil, ownFoods: [V1FoodProduct] = []) {
+    init(
+        day: V1FoodLogDay? = nil, failure: (any Error)? = nil, dayFailure: (any Error)? = nil,
+        ownFoods: [V1FoodProduct] = []
+    ) {
         if let day { self.day = day }
         self.failure = failure
+        self.dayFailure = dayFailure
         self.ownFoods = ownFoods
     }
 
@@ -569,7 +576,10 @@ private actor StubFoodLog: FoodLogServing {
         deletedFoods.append(id)
     }
 
-    func day(trainingDayId: String, token: String) async throws -> V1FoodLogDay { day }
+    func day(trainingDayId: String, token: String) async throws -> V1FoodLogDay {
+        if let dayFailure { throw dayFailure }
+        return day
+    }
 
     func add(_ draft: FoodLogDraft, token: String) async throws -> V1FoodLogEntry {
         if let failure { throw failure }
@@ -713,14 +723,68 @@ private final class Recorder {
 }
 
 @MainActor
-private func makeStore(_ client: StubFoodLog, recorder: Recorder) -> FoodLogStore {
+private func makeStore(
+    _ client: StubFoodLog, recorder: Recorder, modelContext: ModelContext? = nil
+) -> FoodLogStore {
     FoodLogStore(
         trainingDayId: "2026-10-01",
         client: client,
         tokenProvider: { "t" },
         onChange: { recorder.reloads += 1 },
-        reportFailure: { recorder.failures.append($0) }
+        reportFailure: { recorder.failures.append($0) },
+        modelContext: modelContext
     )
+}
+
+@MainActor
+@Test func aDayAlreadyReadIsShownBeforeTheServerAnswers() async throws {
+    let context = ModelContext(try SharpitPersistence.makeContainer(inMemory: true))
+    let day = try JSONDecoder().decode(V1FoodLogDay.self, from: Data(dayJSON.utf8))
+    let first = makeStore(StubFoodLog(day: day), recorder: Recorder(), modelContext: context)
+    #expect(first.phase == .loading)
+    await first.load(trainingDayId: "2026-10-01")
+
+    // The page is left and opened again, the network down: the day stands as it was read.
+    let again = makeStore(
+        StubFoodLog(dayFailure: SharpitAPIError.transport), recorder: Recorder(), modelContext: context
+    )
+    #expect(again.phase == .ready)
+    #expect(again.entries == day.entries)
+    #expect(again.targets == day.targets)
+    await again.load(trainingDayId: "2026-10-01")
+    #expect(again.phase == .ready)
+    #expect(again.entries == day.entries)
+}
+
+@MainActor
+@Test func aWriteIsKeptSoTheNextVisitShowsIt() async throws {
+    let context = ModelContext(try SharpitPersistence.makeContainer(inMemory: true))
+    let day = try JSONDecoder().decode(V1FoodLogDay.self, from: Data(dayJSON.utf8))
+    let store = makeStore(StubFoodLog(day: day), recorder: Recorder(), modelContext: context)
+    await store.load(trainingDayId: "2026-10-01")
+    let removed = try #require(store.entries.first)
+    await store.delete(removed)
+
+    let again = makeStore(
+        StubFoodLog(dayFailure: SharpitAPIError.transport), recorder: Recorder(), modelContext: context
+    )
+    #expect(!again.entries.contains { $0.id == removed.id })
+    #expect(again.entries.count == day.entries.count - 1)
+}
+
+@MainActor
+@Test func aKeptDayNeverShowsUnderAnotherDate() async throws {
+    let context = ModelContext(try SharpitPersistence.makeContainer(inMemory: true))
+    let day = try JSONDecoder().decode(V1FoodLogDay.self, from: Data(dayJSON.utf8))
+    let store = makeStore(StubFoodLog(day: day), recorder: Recorder(), modelContext: context)
+    await store.load(trainingDayId: "2026-10-01")
+
+    let other = makeStore(
+        StubFoodLog(dayFailure: SharpitAPIError.transport), recorder: Recorder(), modelContext: context
+    )
+    await other.load(trainingDayId: "2026-10-02")
+    #expect(other.entries.isEmpty)
+    #expect(other.phase != .ready)
 }
 
 @MainActor

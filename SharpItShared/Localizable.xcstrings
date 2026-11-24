@@ -56361,6 +56361,262 @@
           }
         }
       }
+    },
+    "Bonjour" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Good morning"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bonjour"
+          }
+        }
+      }
+    },
+    "Bonsoir" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Good evening"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bonsoir"
+          }
+        }
+      }
+    },
+    "Bonjour, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Good morning, %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bonjour, %@"
+          }
+        }
+      }
+    },
+    "Bonsoir, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Good evening, %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bonsoir, %@"
+          }
+        }
+      }
+    },
+    "Un coach qui répond avec ta nuit, ta charge et ton plan" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A coach that answers with your night, your load and your plan"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un coach qui répond avec ta nuit, ta charge et ton plan"
+          }
+        }
+      }
+    },
+    "Un plan qui s'ajuste quand ta forme ou ton agenda change" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A plan that adjusts when your form or your schedule changes"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un plan qui s'ajuste quand ta forme ou ton agenda change"
+          }
+        }
+      }
+    },
+    "Le bilan de ta semaine, et la suivante déjà prête" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your week reviewed, and the next one ready"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le bilan de ta semaine, et la suivante déjà prête"
+          }
+        }
+      }
+    },
+    "Chaque séance lue : ce qui a marché, ce qui a coûté" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every session read: what worked, what cost you"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chaque séance lue : ce qui a marché, ce qui a coûté"
+          }
+        }
+      }
+    },
+    "Tes habitudes analysées, un ou deux ajustements à tester" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your habits analysed, one or two changes to try"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tes habitudes analysées, un ou deux ajustements à tester"
+          }
+        }
+      }
+    },
+    "Ta nutrition lue chaque jour face à ton entraînement" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your nutrition read every day against your training"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ta nutrition lue chaque jour face à ton entraînement"
+          }
+        }
+      }
+    },
+    "Ton âge biologique, estimé depuis ta VO₂max" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your biological age, estimated from your VO₂max"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ton âge biologique, estimé depuis ta VO₂max"
+          }
+        }
+      }
+    },
+    "Tes séances envoyées sur ta montre" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your sessions sent to your watch"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tes séances envoyées sur ta montre"
+          }
+        }
+      }
+    },
+    "Sommeil, poids, volume et régularité sur ton écran d'accueil" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sleep, weight, volume and consistency on your home screen"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sommeil, poids, volume et régularité sur ton écran d'accueil"
+          }
+        }
+      }
+    },
+    "Les nouveautés chez toi avant tout le monde" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New features on your iPhone before everyone else"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les nouveautés chez toi avant tout le monde"
+          }
+        }
+      }
+    },
+    "SharpIt sans publicité ni revente de données, grâce à toi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SharpIt with no ads and no data resale, thanks to you"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SharpIt sans publicité ni revente de données, grâce à toi"
+          }
+        }
+      }
+    },
+    "Index alphabétique" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alphabetical index"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Index alphabétique"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

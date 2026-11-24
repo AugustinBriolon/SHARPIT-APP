@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 import Testing
 @testable import Sharpit
 
@@ -86,6 +87,26 @@ struct StubGoalClient: GoalServing {
 
     #expect(store.activeGoals.map(\.id) == ["1", "3"])
     #expect(store.completedGoals.map(\.id) == ["2"])
+}
+
+@MainActor
+@Test func goalsAlreadyReadAreShownBeforeTheServerAnswers() async throws {
+    let context = ModelContext(try SharpitPersistence.makeContainer(inMemory: true))
+    let goal = V1Goal(id: "1", title: "Course 1", kind: .race, achieved: false)
+    let first = GoalStore(
+        client: StubGoalClient(stubbedGoals: [goal]),
+        plannedSessionClient: nil, profileClient: nil, activityClient: nil, tokenProvider: { "token" }
+    )
+    await first.load(keptIn: context)
+
+    // A new launch with the session gone: the read fails, the kept goals stand.
+    let again = GoalStore(
+        client: StubGoalClient(stubbedGoals: []),
+        plannedSessionClient: nil, profileClient: nil, activityClient: nil,
+        tokenProvider: { throw SharpitAPIError.transport }
+    )
+    await again.load(keptIn: context)
+    #expect(again.goals.map(\.id) == ["1"])
 }
 
 // MARK: - Ordering

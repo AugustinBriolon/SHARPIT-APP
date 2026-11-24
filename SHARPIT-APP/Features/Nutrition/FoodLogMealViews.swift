@@ -21,6 +21,8 @@ nonisolated enum NutritionMealsMode: Equatable {
 struct FoodLogMealsSection: View {
     let store: FoodLogStore
     let flags: [NutritionEntryFlag]
+    /// The log not read yet and none kept: the meals are named, only their value is awaited.
+    var isLoading = false
     let onAdd: (FoodLogMeal) -> Void
 
     var body: some View {
@@ -39,7 +41,16 @@ struct FoodLogMealsSection: View {
         }
     }
 
+    @ViewBuilder
     private func row(_ section: FoodLogStore.MealSection) -> some View {
+        if isLoading {
+            FoodLogMealRow(section: section, flagged: false, isLoading: true)
+        } else {
+            loadedRow(section)
+        }
+    }
+
+    private func loadedRow(_ section: FoodLogStore.MealSection) -> some View {
         Group {
             if section.entries.isEmpty {
                 Button { onAdd(section.meal) } label: {
@@ -109,15 +120,20 @@ private struct FoodLogMealRow: View {
     let section: FoodLogStore.MealSection
     let flagged: Bool
     var skipped = false
+    /// The meal's value is on its way: its name stands, its energy alone is redacted.
+    var isLoading = false
+
+    /// A meal still being read is not shown as an empty one.
+    private var isMuted: Bool { section.entries.isEmpty && !isLoading }
 
     var body: some View {
         HStack(alignment: .center, spacing: SharpitSpacing.sm) {
-            NutritionMealGlyph(meal: section.meal.storedName, isMuted: section.entries.isEmpty)
+            NutritionMealGlyph(meal: section.meal.storedName, isMuted: isMuted)
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
                     Text(section.meal.label)
-                        .font(SharpitTypography.system(size: 15, weight: section.entries.isEmpty ? .regular : .semibold, relativeTo: .body))
-                        .foregroundStyle(section.entries.isEmpty ? SharpitColor.slate : SharpitColor.foreground)
+                        .font(SharpitTypography.system(size: 15, weight: isMuted ? .regular : .semibold, relativeTo: .body))
+                        .foregroundStyle(isMuted ? SharpitColor.slate : SharpitColor.foreground)
                     if flagged {
                         CliniqueStatusPill(String(localized: "Signalé"), status: .watch)
                             .accessibilityLabel("Aliment signalé par le coach")
@@ -135,7 +151,12 @@ private struct FoodLogMealRow: View {
                 }
             }
             Spacer(minLength: SharpitSpacing.sm)
-            if section.entries.isEmpty {
+            if isLoading {
+                Text(NutritionReadout.kcal(500))
+                    .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .body, digits: true))
+                    .redacted(reason: .placeholder)
+                    .accessibilityLabel("Chargement")
+            } else if section.entries.isEmpty {
                 Text("Ajouter")
                     .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .body))
                     .foregroundStyle(SharpitColor.foreground)

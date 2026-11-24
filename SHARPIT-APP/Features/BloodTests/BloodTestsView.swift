@@ -11,9 +11,15 @@ struct BloodTestsView: View {
     @State private var shownMarker: String?
     private let tokenProvider: () async throws -> String
 
-    init(client: any BloodTestServing = BloodTestClient(), tokenProvider: @escaping () async throws -> String) {
+    /// `store`: the tests a caller already read (Santé), so the page opens on them instead of
+    /// reading them again under a skeleton.
+    init(
+        store: BloodTestsStore? = nil,
+        client: any BloodTestServing = BloodTestClient(),
+        tokenProvider: @escaping () async throws -> String
+    ) {
         self.tokenProvider = tokenProvider
-        _store = State(initialValue: BloodTestsStore(client: client, tokenProvider: tokenProvider))
+        _store = State(initialValue: store ?? BloodTestsStore(client: client, tokenProvider: tokenProvider))
     }
 
     var body: some View {

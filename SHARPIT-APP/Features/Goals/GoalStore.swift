@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import SwiftData
 
 @MainActor
 @Observable
@@ -20,6 +21,8 @@ final class GoalStore {
     private let profileClient: (any AthleteProfileServing)?
     private let activityClient: (any ActivityServing)?
     let tokenProvider: () async throws -> String
+    /// Where the goals are kept between launches, once a page handed it over.
+    @ObservationIgnored private var keptContext: ModelContext?
 
     /// What an achievement's session opens with, pushed in the Objectifs stack.
     var sessionReader: (any ActivityServing)? { activityClient }
@@ -128,14 +131,22 @@ final class GoalStore {
         return (try? await client.linkedActivities(goalId: goalId, token: token)) ?? []
     }
 
-    func load() async {
+    /// Reads the goals. With `keptIn`, the goals last read are shown first when none are held,
+    /// so Objectifs never opens on a skeleton for goals the iPhone already knows.
+    func load(keptIn modelContext: ModelContext? = nil) async {
         guard !isLoading else { return }
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
+        if let modelContext { keptContext = modelContext }
+        if goals.isEmpty,
+           let kept = ResponseCache.read([V1Goal].self, key: ResponseCacheKey.goals, context: keptContext) {
+            goals = kept
+        }
         do {
             let token = try await tokenProvider()
             goals = try await client.goals(token: token)
+            ResponseCache.write(goals, key: ResponseCacheKey.goals, context: keptContext)
 
             // Sessions and activities feed the volume stats and « Lier ma séance ».
             async let fetchedSessions = fetchSessions(token: token)

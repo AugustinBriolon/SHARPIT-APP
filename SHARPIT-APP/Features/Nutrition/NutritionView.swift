@@ -1,4 +1,5 @@
 import Charts
+import SwiftData
 import SwiftUI
 
 /// The day's food log, open to every athlete. Read top to bottom like the other day screens:
@@ -24,7 +25,8 @@ struct NutritionView: View {
         profileClient: any AthleteProfileServing = AthleteProfileClient(),
         foodLogClient: any FoodLogServing = FoodLogClient(),
         day: Date = .now,
-        opensScanner: Bool = false
+        opensScanner: Bool = false,
+        modelContext: ModelContext? = nil
     ) {
         self.opensScanner = opensScanner
         self.profileClient = profileClient
@@ -45,7 +47,8 @@ struct NutritionView: View {
             client: foodLogClient,
             tokenProvider: tokenProvider,
             onChange: { [weak dayStore] in await dayStore?.load() },
-            healthWriter: HealthKitWriter()
+            healthWriter: HealthKitWriter(),
+            modelContext: modelContext
         ))
     }
 
@@ -202,9 +205,7 @@ struct NutritionSections: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             } else if let foodLog {
-                FoodLogMealsSection(store: foodLog, flags: []) { _ in }
-                    .redacted(reason: .placeholder)
-                    .allowsHitTesting(false)
+                FoodLogMealsSection(store: foodLog, flags: [], isLoading: true) { _ in }
             }
         }
     }

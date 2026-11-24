@@ -97,7 +97,7 @@ struct SanteView: View {
             .sheet(isPresented: $isSharing) {
                 if let overview = store.overview { SanteShareSheet(overview: overview) }
             }
-            .navigationDestination(isPresented: $isShowingBloodTests) { BloodTestsView(tokenProvider: tokenProvider) }
+            .navigationDestination(isPresented: $isShowingBloodTests) { BloodTestsView(store: blood, tokenProvider: tokenProvider) }
             .sheet(isPresented: $isEditingWeightTarget, onDismiss: { Task { await reload(force: true) } }) {
                 WeightTargetSheet(profileClient: profileClient, tokenProvider: tokenProvider)
             }
@@ -494,7 +494,7 @@ private struct SanteMarkerSheet: View {
     }
 }
 
-/// Santé before the first byte: the scores and a table, redacted (`docs/adr/0008`).
+/// Santé before the first byte: the scores and a table, redacted (`docs/adr/0038`).
 private struct SanteSkeleton: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.section) {

@@ -22,7 +22,7 @@ final class AthleteProfileStore {
     private(set) var profile = V1AthleteProfile()
     private(set) var history: [V1ThresholdSnapshot] = []
     /// Set when a refresh over a painted cache failed. The profile stays on screen either
-    /// way — a screen never trades known content for an error banner (`docs/adr/0008`).
+    /// way — a screen never trades known content for an error banner (`docs/adr/0038`).
     private(set) var refreshFailure: String?
 
     private let client: any AthleteProfileServing
@@ -42,6 +42,8 @@ final class AthleteProfileStore {
         self.client = client
         self.tokenProvider = tokenProvider
         self.modelContext = modelContext
+        // A page built on a kept profile draws it on its first frame, before `load` runs.
+        hydrateFromCache()
     }
 
     var isExpertReading: Bool { profile.isExpertReading }

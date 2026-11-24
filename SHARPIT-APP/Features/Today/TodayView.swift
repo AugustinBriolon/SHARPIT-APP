@@ -483,6 +483,8 @@ private struct TodayFoldView: View {
     @Environment(ShellRouter.self) private var router
     @Environment(SharpitToastCenter.self) private var toastCenter: SharpitToastCenter?
     @Environment(\.features) private var features
+    /// Handed to the Nutrition page, whose food log paints from its kept day.
+    @Environment(\.modelContext) private var modelContext
 
     let fold: TodayFold
     var hasCompletedArrival: Bool = false
@@ -767,11 +769,11 @@ private struct TodayFoldView: View {
         switch destination {
         case .day:
             if let nutritionClient, let tokenProvider {
-                NutritionView(client: nutritionClient, tokenProvider: tokenProvider, day: foldDay)
+                NutritionView(client: nutritionClient, tokenProvider: tokenProvider, day: foldDay, modelContext: modelContext)
             }
         case .scan:
             if let nutritionClient, let tokenProvider {
-                NutritionView(client: nutritionClient, tokenProvider: tokenProvider, day: foldDay, opensScanner: true)
+                NutritionView(client: nutritionClient, tokenProvider: tokenProvider, day: foldDay, opensScanner: true, modelContext: modelContext)
             }
         }
     }

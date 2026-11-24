@@ -120,7 +120,7 @@ struct GoalsView: View {
                 }
             }
         }
-        .task { await store.load() }
+        .task { await store.load(keptIn: modelContext) }
         .refreshable { await store.load() }
         .onAppear { hasAppeared = true }
     }

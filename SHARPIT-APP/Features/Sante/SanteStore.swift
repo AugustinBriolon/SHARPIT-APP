@@ -3,7 +3,7 @@ import Observation
 import SwiftData
 
 /// What Santé reads: the web's check-up (`/api/v1/health/overview`), kept whole so the page
-/// paints at once, even offline, and refreshes behind (`docs/adr/0008`).
+/// paints at once, even offline, and refreshes behind (`docs/adr/0038`).
 @MainActor
 @Observable
 final class SanteStore {

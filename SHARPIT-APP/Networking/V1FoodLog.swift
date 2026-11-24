@@ -403,7 +403,7 @@ nonisolated struct V1FoodLogDayHealth: Codable, Sendable, Equatable, Hashable {
 }
 
 /// `GET /api/v1/food-log?trainingDayId=`.
-nonisolated struct V1FoodLogDay: Decodable, Sendable, Equatable {
+nonisolated struct V1FoodLogDay: Codable, Sendable, Equatable {
     let trainingDayId: String
     let entries: [V1FoodLogEntry]
     /// Absent from a server older than SHARPIT ADR-070.
