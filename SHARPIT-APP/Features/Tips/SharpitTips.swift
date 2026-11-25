@@ -52,7 +52,18 @@ struct GoalReachedTip: Tip {
 
     var title: Text { Text("Objectif atteint ?") }
     var message: Text? { Text("Appuie longuement sur un objectif en cours pour le valider.") }
-    var image: Image? { Image(systemName: "flag.checkered") }
+    var image: Image? { Image(systemName: "flag") }
     var rules: [Rule] { #Rule(Self.goalsOpened) { $0.donations.count >= 2 } }
     var options: [any TipOption] { [Tips.MaxDisplayCount(1)] }
+}
+
+extension View {
+    /// A tip in Clinique's dress: the tile behind it, ink text, the glyph small and slate so it reads
+    /// as a quiet mark beside the words rather than an illustration.
+    func sharpitTipStyle() -> some View {
+        tipBackground(SharpitColor.tile)
+            .tint(SharpitColor.foreground)
+            .tipImageStyle(SharpitColor.slate)
+            .tipImageSize(CGSize(width: 22, height: 22))
+    }
 }

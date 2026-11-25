@@ -122,8 +122,7 @@ struct JournalView: View {
                 JournalHeader(store: store, progress: store.phase == .ready && !store.isReadingDay ? progress : nil)
                     .padding(.bottom, 14)
                 TipView(DaySwipeTip())
-                    .tipBackground(SharpitColor.tile)
-                    .tint(SharpitColor.foreground)
+                    .sharpitTipStyle()
                     .padding(.bottom, 14)
                 switch store.phase {
                 case .loading:

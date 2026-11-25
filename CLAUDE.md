@@ -227,7 +227,10 @@ the web's `formatTrainingLoad`. In expert, Activité adds « Analyse technique �
 **Siri and Shortcuts** (`Features/Intents/SharpitShortcuts.swift`, the athlete's call, 2026-11-25): four
 App Shortcuts — the day's verdict said without opening the app (from the widget snapshot, only when
 it is today's: `SharpitShortcutReadout`), today's session, the food scanner, the coach. The three that
-open a page return an `OpenURLIntent` on a link `IncomingLink` already reads; none adds a route. Their
+open a page run with `openAppWhenRun` and hand a link `IncomingLink` already reads to the app's
+`IncomingLinkInbox`, registered as an App Intents dependency in `SharpitApp.init`; none adds a route.
+Never an `OpenURLIntent` on a `sharpit.app` link: the site's `apple-app-site-association` claims only
+the sign-in callbacks, so the system opens any other path in Safari (seen 2026-11-25). Their
 phrases are French in code and translated in `SHARPIT-APP/AppShortcuts.xcstrings`.
 
 **Spotlight** (`Features/Spotlight/SpotlightIndex.swift`, 2026-11-25): the iPhone's search finds the

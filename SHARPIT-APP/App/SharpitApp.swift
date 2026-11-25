@@ -1,3 +1,4 @@
+import AppIntents
 import CoreSpotlight
 import ClerkKit
 import ClerkKitUI
@@ -10,7 +11,7 @@ struct SharpitApp: App {
     /// Nil only when both on-disk and in-memory containers failed — the app then shows a
     /// cannot-start screen instead of crashing via `try!`.
     private let modelContainer: ModelContainer?
-    @State private var linkInbox = IncomingLinkInbox()
+    @State private var linkInbox: IncomingLinkInbox
     /// One per process: a return from the background never shows the splash again.
     @State private var launchCurtain = LaunchCurtain { lift in
         // Critically damped: it settles without a bounce, quick enough not to hold Résumé back.
@@ -27,6 +28,12 @@ struct SharpitApp: App {
         Clerk.configure(publishableKey: ClerkConfiguration.publishableKey)
         SharpitTips.configure()
         modelContainer = Self.makeModelContainer()
+        // One inbox for every way a page is asked for: a link, a search result, a Siri shortcut.
+        // The shortcuts reach it as an App Intents dependency, so they open the app itself
+        // rather than a `sharpit.app` link the site does not hand to the app (it opens Safari).
+        let inbox = IncomingLinkInbox()
+        _linkInbox = State(initialValue: inbox)
+        AppDependencyManager.shared.add(dependency: inbox)
     }
 
     private static func makeModelContainer() -> ModelContainer? {

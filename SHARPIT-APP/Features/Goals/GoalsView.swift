@@ -74,8 +74,7 @@ struct GoalsView: View {
                         .revealed(hasAppeared, index: 1)
                 } else if !inProgress.isEmpty {
                     TipView(GoalReachedTip())
-                        .tipBackground(SharpitColor.tile)
-                        .tint(SharpitColor.foreground)
+                        .sharpitTipStyle()
                     goalList(title: String(localized: "En cours"), goals: inProgress, startIndex: 1)
                 }
 

@@ -76,8 +76,7 @@ struct ExercisePickerSheet: View {
                     LazyVStack(alignment: .leading, spacing: 0, pinnedViews: .sectionHeaders) {
                         if !browsed.isEmpty {
                             TipView(ExerciseIndexTip())
-                                .tipBackground(SharpitColor.tile)
-                                .tint(SharpitColor.foreground)
+                                .sharpitTipStyle()
                                 .padding(.top, SharpitSpacing.xs)
                         }
                         if !results.own.isEmpty {

@@ -36,8 +36,7 @@ struct FoodLogMealsSection: View {
                 .padding(.bottom, 4)
             if !isLoading {
                 TipView(CopyMealTip())
-                    .tipBackground(SharpitColor.tile)
-                    .tint(SharpitColor.foreground)
+                    .sharpitTipStyle()
                     .padding(.vertical, SharpitSpacing.xs)
             }
             let sections = store.sections
