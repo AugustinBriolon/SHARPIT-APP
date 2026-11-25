@@ -833,7 +833,13 @@ struct ScreenDemoHost: View {
             default:
                 TabView {
                     Tab {
-                        TodayView(client: DemoToday(), tokenProvider: { "demo" }, nutritionClient: DemoNutrition())
+                        // With its status and journal chips, as a signed-in athlete sees Résumé.
+                        TodayView(
+                            client: DemoToday(), tokenProvider: { "demo" },
+                            activityStatusClient: DemoActivityStatus(status: .active),
+                            journalClient: DemoJournal(), wellnessClient: WellnessClient(),
+                            nutritionClient: DemoNutrition()
+                        )
                     } label: { SharpitTabLabel(String(localized: "Résumé"), systemImage: "house") }
                     Tab {
                         PlanView(
@@ -1293,8 +1299,13 @@ private struct DemoActivityMutator: ActivityMutating {
 }
 
 private struct DemoActivityStatus: ActivityStatusServing {
+    /// Injured with an end date for the status drawer's demo; active on Résumé.
+    var status: ActivityStatusId = .injured
+
     func activityStatus(token: String) async throws -> V1ActivityStatusStore {
-        V1ActivityStatusStore(status: .injured, retention: .untilDate("2026-12-31"))
+        status == .active
+            ? V1ActivityStatusStore(status: .active, retention: .untilModified)
+            : V1ActivityStatusStore(status: status, retention: .untilDate("2026-12-31"))
     }
     func setActivityStatus(_ write: V1ActivityStatusWrite, token: String) async throws -> V1ActivityStatusStore {
         V1ActivityStatusStore(status: write.status, retention: write.retention ?? .untilModified)
@@ -1449,14 +1460,28 @@ private struct DemoFoodLog: FoodLogServing {
         kcalPer100g: 124, proteinPer100g: 4.8, carbsPer100g: 25, fatPer100g: 0.9, fiberPer100g: 3.6
     )
 
+    /// A whole day, a food or more in each meal, adding up to the 1 850 kcal the demo day reads.
     func day(trainingDayId: String, token: String) async throws -> V1FoodLogDay {
-        try JSONDecoder().decode(V1FoodLogDay.self, from: Data("""
+        func entry(_ id: String, _ meal: String, _ name: String, _ grams: Int, _ kcal: Int, _ protein: Int, _ carbs: Int, _ fat: Int, group: String? = nil) -> String {
+            let grouped = group.map { #","groupId":"g1","groupLabel":"\#($0)""# } ?? ""
+            return #"{"id":"\#(id)","meal":"\#(meal)","name":"\#(name)","grams":\#(grams),"kcal":\#(kcal),"protein":\#(protein),"carbs":\#(carbs),"fat":\#(fat)\#(grouped)}"#
+        }
+        let dish = String(localized: "Poulet, riz et courgettes")
+        let entries = [
+            entry("b1", "BREAKFAST", String(localized: "Flocons d'avoine"), 60, 230, 8, 40, 4),
+            entry("b2", "BREAKFAST", String(localized: "Banane"), 120, 107, 1, 27, 0),
+            entry("b3", "BREAKFAST", String(localized: "Yaourt grec"), 150, 183, 9, 6, 13),
+            entry("1", "LUNCH", String(localized: "Riz basmati, cuit"), 220, 286, 6, 62, 1, group: dish),
+            entry("2", "LUNCH", String(localized: "Blanc de poulet grillé"), 150, 248, 46, 0, 5, group: dish),
+            entry("3", "LUNCH", String(localized: "Courgettes sautées"), 180, 61, 3, 6, 3, group: dish),
+            entry("4", "LUNCH", String(localized: "Huile d'olive"), 14, 126, 0, 0, 14),
+            entry("d1", "DINNER", String(localized: "Pavé de saumon"), 120, 250, 25, 0, 16),
+            entry("d2", "DINNER", String(localized: "Pâtes complètes, cuites"), 170, 209, 8, 43, 2),
+            entry("s1", "SNACKS", String(localized: "Amandes"), 25, 150, 5, 2, 13),
+        ].joined(separator: ",")
+        return try JSONDecoder().decode(V1FoodLogDay.self, from: Data("""
         {"trainingDayId":"\(trainingDayId)","recent":[],"targets":{"mode":"GRAMS","kcal":2850,"proteinG":150,"carbsG":380,"fatG":90},
-         "entries":[
-          {"id":"1","meal":"LUNCH","name":"Riz basmati, cuit","grams":220,"kcal":286,"protein":6,"carbs":62,"fat":1,"groupId":"g1","groupLabel":"Poulet, riz et courgettes"},
-          {"id":"2","meal":"LUNCH","name":"Blanc de poulet grillé","grams":150,"kcal":248,"protein":46,"carbs":0,"fat":5,"groupId":"g1","groupLabel":"Poulet, riz et courgettes"},
-          {"id":"3","meal":"LUNCH","name":"Courgettes sautées","grams":180,"kcal":61,"protein":3,"carbs":6,"fat":3,"groupId":"g1","groupLabel":"Poulet, riz et courgettes"},
-          {"id":"4","meal":"LUNCH","name":"Huile d'olive","grams":14,"kcal":126,"protein":0,"carbs":0,"fat":14}]}
+         "entries":[\(entries)]}
         """.utf8))
     }
 
