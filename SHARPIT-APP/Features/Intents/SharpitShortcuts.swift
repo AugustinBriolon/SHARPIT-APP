@@ -61,11 +61,9 @@ struct OpenTodaySessionIntent: AppIntent {
     static let description = IntentDescription("Ouvre la séance prévue aujourd'hui, ou ce que tu as fait.")
     static let openAppWhenRun = true
 
-    @Dependency private var inbox: IncomingLinkInbox
-
     @MainActor
     func perform() async throws -> some IntentResult {
-        inbox.receive(SharpitShortcutReadout.sessionLink(snapshot: WidgetSnapshotStore.read(), now: .now))
+        SharpitPageOpener.request(SharpitShortcutReadout.sessionLink(snapshot: WidgetSnapshotStore.read(), now: .now))
         return .result()
     }
 }
@@ -75,11 +73,9 @@ struct LogMealIntent: AppIntent {
     static let description = IntentDescription("Ouvre le scanner du journal alimentaire.")
     static let openAppWhenRun = true
 
-    @Dependency private var inbox: IncomingLinkInbox
-
     @MainActor
     func perform() async throws -> some IntentResult {
-        inbox.receive(WidgetSnapshot.link("/nutrition/scan"))
+        SharpitPageOpener.request(WidgetSnapshot.link("/nutrition/scan"))
         return .result()
     }
 }
@@ -89,11 +85,9 @@ struct AskCoachIntent: AppIntent {
     static let description = IntentDescription("Ouvre la conversation avec le coach.")
     static let openAppWhenRun = true
 
-    @Dependency private var inbox: IncomingLinkInbox
-
     @MainActor
     func perform() async throws -> some IntentResult {
-        inbox.receive(WidgetSnapshot.link("/coach"))
+        SharpitPageOpener.request(WidgetSnapshot.link("/coach"))
         return .result()
     }
 }

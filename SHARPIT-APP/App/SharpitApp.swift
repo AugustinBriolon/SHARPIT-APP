@@ -1,4 +1,3 @@
-import AppIntents
 import CoreSpotlight
 import ClerkKit
 import ClerkKitUI
@@ -28,12 +27,11 @@ struct SharpitApp: App {
         Clerk.configure(publishableKey: ClerkConfiguration.publishableKey)
         SharpitTips.configure()
         modelContainer = Self.makeModelContainer()
-        // One inbox for every way a page is asked for: a link, a search result, a Siri shortcut.
-        // The shortcuts reach it as an App Intents dependency, so they open the app itself
-        // rather than a `sharpit.app` link the site does not hand to the app (it opens Safari).
+        // One inbox for every way a page is asked for: a link, a search result, a Siri shortcut,
+        // a Control Center button (`SharpitPageOpener`).
         let inbox = IncomingLinkInbox()
         _linkInbox = State(initialValue: inbox)
-        AppDependencyManager.shared.add(dependency: inbox)
+        SharpitPageOpener.register { inbox.receive($0) }
     }
 
     private static func makeModelContainer() -> ModelContainer? {

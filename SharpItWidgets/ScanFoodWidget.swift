@@ -58,7 +58,7 @@ struct ScanFoodWidgetView: View {
 struct ScanFoodControl: ControlWidget {
     var body: some ControlWidgetConfiguration {
         StaticControlConfiguration(kind: "app.sharpit.ios.scan-food") {
-            ControlWidgetButton(action: OpenURLIntent(WidgetSnapshot.link("/nutrition/scan"))) {
+            ControlWidgetButton(action: OpenFoodScannerControlIntent()) {
                 Label("Scanner un produit", systemImage: "barcode.viewfinder")
             }
         }

@@ -78,7 +78,7 @@ private struct SendMark: View {
 struct CoachControl: ControlWidget {
     var body: some ControlWidgetConfiguration {
         StaticControlConfiguration(kind: "app.sharpit.ios.ask-coach") {
-            ControlWidgetButton(action: OpenURLIntent(WidgetSnapshot.link("/coach"))) {
+            ControlWidgetButton(action: OpenCoachControlIntent()) {
                 Label("Demander au coach", systemImage: "bubble.left.and.text.bubble.right")
             }
         }
