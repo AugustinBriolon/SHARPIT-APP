@@ -4,7 +4,7 @@ Date: 2026-10-25
 
 ## Status
 
-Accepted.
+Accepted. Amended by `docs/adr/0040`: a gesture nothing on screen shows may be said once, as a tip.
 
 ## Context
 

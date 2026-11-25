@@ -25,6 +25,7 @@ struct SharpitApp: App {
             Task { await AppDistribution.prepare() }
         }
         Clerk.configure(publishableKey: ClerkConfiguration.publishableKey)
+        SharpitTips.configure()
         modelContainer = Self.makeModelContainer()
     }
 

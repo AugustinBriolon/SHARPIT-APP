@@ -57097,6 +57097,134 @@
           }
         }
       }
+    },
+    "Glisse pour changer de jour" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Swipe to change the day"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glisse pour changer de jour"
+          }
+        }
+      }
+    },
+    "Vers la droite pour la veille, vers la gauche pour revenir." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Right for the day before, left to come back."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vers la droite pour la veille, vers la gauche pour revenir."
+          }
+        }
+      }
+    },
+    "Mange souvent la même chose ?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Often eat the same thing?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mange souvent la même chose ?"
+          }
+        }
+      }
+    },
+    "Appuie longuement sur un repas pour copier celui de la veille." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Long-press a meal to copy the one from the day before."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Appuie longuement sur un repas pour copier celui de la veille."
+          }
+        }
+      }
+    },
+    "Glisse sur l'alphabet" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slide along the alphabet"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glisse sur l'alphabet"
+          }
+        }
+      }
+    },
+    "Fais courir ton doigt sur les lettres pour parcourir le catalogue." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Run your finger down the letters to move through the catalog."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fais courir ton doigt sur les lettres pour parcourir le catalogue."
+          }
+        }
+      }
+    },
+    "Objectif atteint ?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Goal reached?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Objectif atteint ?"
+          }
+        }
+      }
+    },
+    "Appuie longuement sur un objectif en cours pour le valider." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Long-press a goal in progress to mark it reached."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Appuie longuement sur un objectif en cours pour le valider."
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

@@ -1,4 +1,5 @@
 import SwiftUI
+import TipKit
 
 /// Which meals the Nutrition page lists for a day.
 nonisolated enum NutritionMealsMode: Equatable {
@@ -33,6 +34,12 @@ struct FoodLogMealsSection: View {
                 .foregroundStyle(SharpitColor.foreground)
                 .accessibilityAddTraits(.isHeader)
                 .padding(.bottom, 4)
+            if !isLoading {
+                TipView(CopyMealTip())
+                    .tipBackground(SharpitColor.tile)
+                    .tint(SharpitColor.foreground)
+                    .padding(.vertical, SharpitSpacing.xs)
+            }
             let sections = store.sections
             ForEach(Array(sections.enumerated()), id: \.element.id) { index, section in
                 if index > 0 { CliniqueDivider() }

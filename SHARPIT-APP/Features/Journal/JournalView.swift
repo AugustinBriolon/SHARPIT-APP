@@ -1,5 +1,6 @@
 import SwiftData
 import SwiftUI
+import TipKit
 
 /// The day's journal: what the athlete did, took or felt, beside the numbers the
 /// devices report on their own.
@@ -95,6 +96,7 @@ struct JournalView: View {
                 HydrationInputSheet(store: store)
             }
             .task { await store.load() }
+            .task { await DaySwipeTip.dayOpened.donate() }
             .task { await store.markAnsweredDays() }
             .task { await analysesStore?.load() }
             .onDisappear {
@@ -118,6 +120,10 @@ struct JournalView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 JournalHeader(store: store, progress: store.phase == .ready && !store.isReadingDay ? progress : nil)
+                    .padding(.bottom, 14)
+                TipView(DaySwipeTip())
+                    .tipBackground(SharpitColor.tile)
+                    .tint(SharpitColor.foreground)
                     .padding(.bottom, 14)
                 switch store.phase {
                 case .loading:

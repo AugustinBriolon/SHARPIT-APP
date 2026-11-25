@@ -363,7 +363,9 @@ What makes a surface feel finished, applied everywhere new work lands:
 - **Let the layout explain.** No subtitle, detail line, list footer or helper sentence that restates
   the title, the value or the structure around it. Kept: text that carries data, names an error and
   its fix, offers the next step of an actionable empty state, confirms a destructive action, or
-  states consent / legal terms (ADR 0026).
+  states consent / legal terms (ADR 0026). One exception (ADR 0040): a gesture nothing on screen
+  shows — a long press, a swipe — may be said once as a TipKit tip laid in the page (`SharpitTips`),
+  dismissable, at most one a day; a visible control never gets one.
 - **No dead ends.** An empty day offers the next step (sync, another day, link a source); a
   failure names its cause and the fix (`SharpitErrorGuidance`: network, session, server).
   A read that fails under content already on screen (read before, or cached) keeps it and says so

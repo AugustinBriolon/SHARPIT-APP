@@ -2,6 +2,7 @@ import Foundation
 import Observation
 import SwiftData
 import SwiftUI
+import TipKit
 
 /// One training day of the in-app food log (SHARPIT ADR-061): its entries by meal, the
 /// athlete's targets and the foods logged lately.
@@ -147,6 +148,7 @@ final class FoodLogStore {
     func add(_ draft: FoodLogDraft) async {
         let pending = Self.pendingEntry(for: draft)
         entries.append(pending)
+        Task { await CopyMealTip.foodLogged.donate() }
         do {
             let stored = try await SharpitRetry.run {
                 try await client.add(draft, token: try await tokenProvider())

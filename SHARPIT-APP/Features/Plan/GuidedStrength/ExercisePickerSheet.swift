@@ -1,4 +1,5 @@
 import SwiftUI
+import TipKit
 
 /// What the picker hands back: an exercise to add to the session.
 struct ExercisePick: Equatable {
@@ -73,6 +74,12 @@ struct ExercisePickerSheet: View {
                 ScrollView {
                     // Lazy: browsing lists the whole catalog, over a thousand lines with a picture each.
                     LazyVStack(alignment: .leading, spacing: 0, pinnedViews: .sectionHeaders) {
+                        if !browsed.isEmpty {
+                            TipView(ExerciseIndexTip())
+                                .tipBackground(SharpitColor.tile)
+                                .tint(SharpitColor.foreground)
+                                .padding(.top, SharpitSpacing.xs)
+                        }
                         if !results.own.isEmpty {
                             // In a `ForEach` for its identity: a lazy stack can scroll to an identity it
                             // has not laid out, which a plain `.id` on a row far above cannot promise.

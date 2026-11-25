@@ -1,6 +1,7 @@
 import StoreKit
 import SwiftData
 import SwiftUI
+import TipKit
 
 /// Plan → Objectifs: the races and figures the season is built toward.
 ///
@@ -72,6 +73,9 @@ struct GoalsView: View {
                     emptyState
                         .revealed(hasAppeared, index: 1)
                 } else if !inProgress.isEmpty {
+                    TipView(GoalReachedTip())
+                        .tipBackground(SharpitColor.tile)
+                        .tint(SharpitColor.foreground)
                     goalList(title: String(localized: "En cours"), goals: inProgress, startIndex: 1)
                 }
 
@@ -123,6 +127,7 @@ struct GoalsView: View {
             }
         }
         .task { await store.load(keptIn: modelContext) }
+        .task { await GoalReachedTip.goalsOpened.donate() }
         // A goal reached, from this list or from its page pushed in this stack.
         .onChange(of: store.lastReachedAt) { _, reached in
             if reached != nil { ReviewPrompt.askAfterWin(requestReview) }
