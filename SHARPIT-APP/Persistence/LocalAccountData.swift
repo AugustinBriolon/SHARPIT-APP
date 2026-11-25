@@ -57,6 +57,7 @@ enum LocalAccountData {
         ActivityDraftLocalStore.shared.erase()
         GuidedHeartRatePreference.clear()
         ReviewPrompt.erase(defaults)
+        SpotlightIndex.eraseAll()
         defaults.removeObject(forKey: ownerKey)
         WidgetSnapshotPublisher.erase()
         WidgetCenter.shared.reloadAllTimelines()

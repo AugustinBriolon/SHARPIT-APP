@@ -227,6 +227,7 @@ struct ActivityView: View {
                     activities = page
                 }
                 WidgetSnapshotPublisher.publish(activities)
+                SpotlightIndex.indexActivities(activities)
                 let recorded = activities
                 Task(priority: .utility) {
                     await WidgetSnapshotPublisher.publishLatestActivity(from: recorded, client: client, token: token)

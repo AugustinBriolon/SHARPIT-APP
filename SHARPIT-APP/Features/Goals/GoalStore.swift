@@ -10,6 +10,7 @@ final class GoalStore {
         didSet {
             guard goals != oldValue else { return }
             WidgetSnapshotPublisher.publish(goals)
+            SpotlightIndex.indexGoals(goals)
             // Kept on every change, a write's included, so a goal deleted never comes back
             // from the cache at the next launch.
             ResponseCache.write(goals, key: ResponseCacheKey.goals, context: keptContext)

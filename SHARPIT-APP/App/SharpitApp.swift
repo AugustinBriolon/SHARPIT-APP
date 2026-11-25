@@ -1,3 +1,4 @@
+import CoreSpotlight
 import ClerkKit
 import ClerkKitUI
 import SwiftData
@@ -112,6 +113,10 @@ struct SharpitApp: App {
         .environment(\.clerkTheme, .sharpit)
         // Per iPhone, never synced (Paramètres → Apparence).
         .sharpitAppearance()
+        // A result tapped in the iPhone's search carries the link it was indexed under.
+        .onContinueUserActivity(CSSearchableItemActionType) { activity in
+            if let link = SpotlightLink.url(from: activity.userInfo) { linkInbox.receive(link) }
+        }
         .onOpenURL { url in
             linkInbox.receive(url)
             Task {

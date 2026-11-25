@@ -33,6 +33,8 @@ final class PlanStore {
     @ObservationIgnored private var freshOffsets: Set<Int> = []
     /// Each week as last answered, read from the iPhone once and only when its page is drawn.
     @ObservationIgnored private var storedWeeks: [Int: [PlanEntry]?] = [:]
+    /// The planned sessions last read for this week and the two after, for the iPhone's search.
+    @ObservationIgnored fileprivate var spotlightWeeks: [Int: [V1PlannedSessionItem]] = [:]
 
     private let client: any PlannedSessionServing
     private let activityClient: any ActivityServing
@@ -263,8 +265,11 @@ final class PlanStore {
             // rather than emptying the week.
             async let recorded = try? activityClient.activities(from: start, to: nextWeek, token: token)
 
+            let plannedSessions = try await planned
+            // The weeks just ahead are what the iPhone's search should find.
+            if (0...2).contains(offset) { SpotlightIndex.indexPlan(plannedSessionsAhead(adding: plannedSessions, at: offset)) }
             let entries = PlanEntryBuilder.entries(
-                planned: try await planned,
+                planned: plannedSessions,
                 // Filtered again: a server that ignores the window still answers with the week only.
                 activities: (await recorded ?? []).filter { $0.date >= start && $0.date < nextWeek },
                 calendar: calendar
@@ -289,6 +294,15 @@ final class PlanStore {
             }
             weeks[offset] = .error(error.localizedDescription)
         }
+    }
+}
+
+extension PlanStore {
+    /// The three weeks from this one, each the latest read: the index is replaced whole, so a
+    /// week read alone must not drop the others' sessions.
+    fileprivate func plannedSessionsAhead(adding sessions: [V1PlannedSessionItem], at offset: Int) -> [V1PlannedSessionItem] {
+        spotlightWeeks[offset] = sessions
+        return (0...2).flatMap { spotlightWeeks[$0] ?? [] }
     }
 }
 

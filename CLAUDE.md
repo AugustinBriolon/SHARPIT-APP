@@ -230,6 +230,12 @@ it is today's: `SharpitShortcutReadout`), today's session, the food scanner, the
 open a page return an `OpenURLIntent` on a link `IncomingLink` already reads; none adds a route. Their
 phrases are French in code and translated in `SHARPIT-APP/AppShortcuts.xcstrings`.
 
+**Spotlight** (`Features/Spotlight/SpotlightIndex.swift`, 2026-11-25): the iPhone's search finds the
+sessions planned in the next 21 days, the 60 latest sessions done and the goals in progress — a title,
+a sport and a day, never a health figure. Each kind is replaced whole when its list is read (`PlanStore`
+weeks 0–2, `ActivityView`, `GoalStore`), the identifier is the page's `https://sharpit.app` link, a tap
+comes back through `onContinueUserActivity` into `IncomingLinkInbox`, and `LocalAccountData` wipes the index.
+
 **Weather** comes from WeatherKit + Core Location (`LocationWeatherService`), never from
 the API.
 
