@@ -1,5 +1,6 @@
 import Charts
 import Observation
+import StoreKit
 import SwiftUI
 
 /// The coach's review of the week (SharpIt Pro): the latest one written, or the way to write
@@ -60,6 +61,7 @@ final class WeeklyReviewStore {
 
 struct WeeklyReviewView: View {
     @State private var store: WeeklyReviewStore
+    @Environment(\.requestReview) private var requestReview
     /// « Préparer ma semaine »: the review's natural next step (ADR-095); nil where it cannot open.
     private let onPrepareWeek: (() -> Void)?
 
@@ -108,6 +110,15 @@ struct WeeklyReviewView: View {
         }
         .task { await store.load() }
         .refreshable { await store.load() }
+        // A full week is a win the screen already says: the one moment here to ask for a rating.
+        .onChange(of: isFullWeek) { _, full in
+            if full { ReviewPrompt.askAfterWin(requestReview) }
+        }
+    }
+
+    private var isFullWeek: Bool {
+        guard case .loaded(let review) = store.phase else { return false }
+        return WeeklyReviewReadout.isFull(review.stats)
     }
 
     @ViewBuilder
@@ -283,12 +294,19 @@ nonisolated enum WeeklyReviewReadout {
         return String(localized: "Bilan du \(from) au \(to)")
     }
 
+    /// Every planned session done.
+    static func isFull(_ stats: V1WeeklyStats?) -> Bool {
+        guard let done = stats?.sessionsDone else { return false }
+        let planned = max(stats?.sessionsPlanned ?? done, done)
+        return planned > 0 && done >= planned
+    }
+
     /// How full the week was against its plan; nil when the sessions are not counted.
     static func standing(_ stats: V1WeeklyStats?) -> (text: String, status: CliniqueStatus)? {
         guard let done = stats?.sessionsDone else { return nil }
         let planned = max(stats?.sessionsPlanned ?? done, done)
         guard planned > 0 else { return nil }
-        if done >= planned { return (String(localized: "Semaine pleine"), .good) }
+        if isFull(stats) { return (String(localized: "Semaine pleine"), .good) }
         return Double(done) / Double(planned) >= 0.5
             ? (String(localized: "Semaine presque pleine"), .good)
             : (String(localized: "Semaine légère"), .watch)

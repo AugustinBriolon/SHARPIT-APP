@@ -1,4 +1,5 @@
 import AudioToolbox
+import StoreKit
 import SwiftUI
 
 /// Creates the logged STRENGTH activity and links it back to the planned session.
@@ -28,6 +29,7 @@ struct GuidedStrengthWorkoutView: View {
     @State private var noteTarget: ExerciseNoteTarget?
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.requestReview) private var requestReview
     /// Nil when shown on its own (the design gallery): then it is a plain cover.
     @Environment(GuidedWorkoutDock.self) private var dock: GuidedWorkoutDock?
     @State private var phase: Phase = .overview
@@ -1203,6 +1205,7 @@ struct GuidedStrengthWorkoutView: View {
                 try? await finish.linker?.link(sessionId: plannedId, activityId: activityId, token: token)
             }
             finish.onFinished(activityId)
+            ReviewPrompt.askAfterWin(requestReview)
             // Mirrored into Apple Santé behind: the session is saved either way.
             let (title, start, end) = (session.title, session.startedAt, Date.now)
             Task { try? await HealthKitWriter().saveStrengthWorkout(activityId: activityId, title: title, start: start, end: end) }

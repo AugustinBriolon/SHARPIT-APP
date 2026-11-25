@@ -1,3 +1,4 @@
+import StoreKit
 import SwiftData
 import SwiftUI
 
@@ -12,6 +13,7 @@ struct GoalsView: View {
     @State private var store: GoalStore
     @State private var hasAppeared = false
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.requestReview) private var requestReview
 
     init(store: GoalStore) {
         _store = State(initialValue: store)
@@ -121,6 +123,10 @@ struct GoalsView: View {
             }
         }
         .task { await store.load(keptIn: modelContext) }
+        // A goal reached, from this list or from its page pushed in this stack.
+        .onChange(of: store.lastReachedAt) { _, reached in
+            if reached != nil { ReviewPrompt.askAfterWin(requestReview) }
+        }
         .refreshable { await store.load() }
         .onAppear { hasAppeared = true }
     }

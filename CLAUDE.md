@@ -344,7 +344,10 @@ What makes a surface feel finished, applied everywhere new work lands:
 - **Announce news, not work.** After a sync, say what came in (« 3 aliments ajoutés »); say « à jour »
   only when the athlete asked.
 - **Reward, don't nag.** A kept day earns its seal (`NutritionGoalSeal`), found by opening it. No
-  streak counters.
+  streak counters. The App Store rating is asked only after a win the screen already shows — a full
+  week in the weekly review, a goal marked reached, a guided strength session saved — through
+  `ReviewPrompt.askAfterWin`: never before two weeks and three days of use, once a version, never
+  twice in 120 days, and no SharpIt text before Apple's window (`ReviewPromptPolicy`).
 - **Let the layout explain.** No subtitle, detail line, list footer or helper sentence that restates
   the title, the value or the structure around it. Kept: text that carries data, names an error and
   its fix, offers the next step of an actionable empty state, confirms a destructive action, or

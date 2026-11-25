@@ -26,6 +26,8 @@ final class GoalStore {
     private(set) var achievements: [V1GoalAchievement] = []
     private(set) var isLoading = false
     private(set) var errorMessage: String?
+    /// Set when a goal was just marked reached and the server took it: a win the page can follow.
+    private(set) var lastReachedAt: Date?
 
     private let client: any GoalServing
     private let plannedSessionClient: (any PlannedSessionServing)?
@@ -271,6 +273,7 @@ final class GoalStore {
             if let idx = goals.firstIndex(where: { $0.id == updated.id }) {
                 goals[idx] = updated
             }
+            if newAchieved { lastReachedAt = .now }
             // Marking a goal reached writes an achievement server-side.
             await refreshAchievements()
         } catch {

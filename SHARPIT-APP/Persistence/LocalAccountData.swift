@@ -56,6 +56,7 @@ enum LocalAccountData {
         WellnessCheckInLocalStore.shared.erase()
         ActivityDraftLocalStore.shared.erase()
         GuidedHeartRatePreference.clear()
+        ReviewPrompt.erase(defaults)
         defaults.removeObject(forKey: ownerKey)
         WidgetSnapshotPublisher.erase()
         WidgetCenter.shared.reloadAllTimelines()
