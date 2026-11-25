@@ -56921,6 +56921,150 @@
           }
         }
       }
+    },
+    "Ton verdict attend ta nuit. Ouvre SharpIt une fois ta montre synchronisée." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your verdict is waiting for your night. Open SharpIt once your watch has synced."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ton verdict attend ta nuit. Ouvre SharpIt une fois ta montre synchronisée."
+          }
+        }
+      }
+    },
+    "Pas de séance prévue aujourd'hui." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No session planned today."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pas de séance prévue aujourd'hui."
+          }
+        }
+      }
+    },
+    "Séance faite : %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Session done: %@."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Séance faite : %@."
+          }
+        }
+      }
+    },
+    "Aujourd'hui : %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today: %@."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aujourd'hui : %@."
+          }
+        }
+      }
+    },
+    "Ce que SharpIt conseille aujourd'hui, et la séance prévue." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What SharpIt advises today, and the planned session."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ce que SharpIt conseille aujourd'hui, et la séance prévue."
+          }
+        }
+      }
+    },
+    "Ouvre la séance prévue aujourd'hui, ou ce que tu as fait." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens today's planned session, or what you did."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvre la séance prévue aujourd'hui, ou ce que tu as fait."
+          }
+        }
+      }
+    },
+    "Noter un repas" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Log a meal"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noter un repas"
+          }
+        }
+      }
+    },
+    "Ouvre le scanner du journal alimentaire." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens the food log scanner."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvre le scanner du journal alimentaire."
+          }
+        }
+      }
+    },
+    "Ouvre la conversation avec le coach." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens the conversation with the coach."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvre la conversation avec le coach."
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

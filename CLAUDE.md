@@ -224,6 +224,12 @@ measured — session load appears in both readings, as « charge 78 » or « 78 
 the web's `formatTrainingLoad`. In expert, Activité adds « Analyse technique » (the streams' `analysis`) and Plan adds « Forme » (`/api/v1/training-load`: CTL/ATL/TSB, weekly TSS); the picker page lists exactly that. It is a reading preference, not an access tier: `tier`
 (FREE / PRO) gates features, the density gates nothing.
 
+**Siri and Shortcuts** (`Features/Intents/SharpitShortcuts.swift`, the athlete's call, 2026-11-25): four
+App Shortcuts — the day's verdict said without opening the app (from the widget snapshot, only when
+it is today's: `SharpitShortcutReadout`), today's session, the food scanner, the coach. The three that
+open a page return an `OpenURLIntent` on a link `IncomingLink` already reads; none adds a route. Their
+phrases are French in code and translated in `SHARPIT-APP/AppShortcuts.xcstrings`.
+
 **Weather** comes from WeatherKit + Core Location (`LocationWeatherService`), never from
 the API.
 

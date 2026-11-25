@@ -1,0 +1,166 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Mon verdict ${applicationName}" : {
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "My ${applicationName} verdict"
+            ]
+          }
+        },
+        "fr" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Mon verdict ${applicationName}"
+            ]
+          }
+        }
+      }
+    },
+    "Quel est mon verdict ${applicationName}" : {
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "What is my ${applicationName} verdict"
+            ]
+          }
+        },
+        "fr" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Quel est mon verdict ${applicationName}"
+            ]
+          }
+        }
+      }
+    },
+    "Ma séance ${applicationName}" : {
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "My ${applicationName} session"
+            ]
+          }
+        },
+        "fr" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Ma séance ${applicationName}"
+            ]
+          }
+        }
+      }
+    },
+    "Ouvre ma séance ${applicationName}" : {
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Open my ${applicationName} session"
+            ]
+          }
+        },
+        "fr" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Ouvre ma séance ${applicationName}"
+            ]
+          }
+        }
+      }
+    },
+    "Noter un repas dans ${applicationName}" : {
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Log a meal in ${applicationName}"
+            ]
+          }
+        },
+        "fr" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Noter un repas dans ${applicationName}"
+            ]
+          }
+        }
+      }
+    },
+    "Scanner un aliment avec ${applicationName}" : {
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Scan a food with ${applicationName}"
+            ]
+          }
+        },
+        "fr" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Scanner un aliment avec ${applicationName}"
+            ]
+          }
+        }
+      }
+    },
+    "Demander au coach ${applicationName}" : {
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Ask the ${applicationName} coach"
+            ]
+          }
+        },
+        "fr" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Demander au coach ${applicationName}"
+            ]
+          }
+        }
+      }
+    },
+    "Parler au coach ${applicationName}" : {
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Talk to the ${applicationName} coach"
+            ]
+          }
+        },
+        "fr" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Parler au coach ${applicationName}"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}
