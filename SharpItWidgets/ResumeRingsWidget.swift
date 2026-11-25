@@ -13,7 +13,9 @@ struct ResumeRingsWidget: Widget {
         }
         .configurationDisplayName("Résumé")
         .description("Tes anneaux du jour : sommeil, récupération, nutrition, régularité.")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        // On the Lock Screen it is the morning's verdict that is read, with the night and the
+        // recovery under it: the call the athlete wakes up to, without opening the app.
+        .supportedFamilies([.systemSmall, .systemMedium, .accessoryRectangular, .accessoryInline])
     }
 }
 
@@ -27,7 +29,11 @@ struct ResumeRingsView: View {
 
     var body: some View {
         Group {
-            if entry.day == nil {
+            if family == .accessoryRectangular {
+                lockScreenRectangular
+            } else if family == .accessoryInline {
+                lockScreenInline
+            } else if entry.day == nil {
                 WidgetAwaitingDay(eyebrow: String(localized: "Résumé"), symbol: "circle.hexagongrid")
             } else if family == .systemMedium {
                 WidgetFrame(String(localized: "Résumé"), symbol: "circle.hexagongrid") {
@@ -52,6 +58,43 @@ struct ResumeRingsView: View {
         }
         // Health values: redacted on a locked device.
         .privacySensitive()
+    }
+
+    // MARK: Lock Screen
+
+    /// The verdict's posture word over its headline, the night and the recovery under it.
+    @ViewBuilder
+    private var lockScreenRectangular: some View {
+        if let day = entry.day, let verdict = day.verdict {
+            VStack(alignment: .leading, spacing: 1) {
+                Label(verdict.status, systemImage: "circle.hexagongrid")
+                    .font(.caption2.weight(.semibold))
+                    .widgetAccentable()
+                Text(verdict.headline)
+                    .font(.headline)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+                if let line = WidgetResumeRing.lockScreenLine(day: day) {
+                    Text(line).font(.caption.monospacedDigit()).lineLimit(1)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        } else {
+            Label(
+                entry.day == nil ? String(localized: "Ouvre SharpIt") : String(localized: "Verdict en attente de ta nuit"),
+                systemImage: "circle.hexagongrid"
+            )
+            .font(.headline)
+            .lineLimit(2)
+        }
+    }
+
+    /// One line above the clock: the verdict's headline.
+    private var lockScreenInline: some View {
+        Label(
+            entry.day?.verdict?.headline ?? (entry.day == nil ? "SharpIt" : String(localized: "Verdict en attente")),
+            systemImage: "circle.hexagongrid"
+        )
     }
 
     /// Medium: the ring with its glyph, its name, its figure — a column of Résumé's strip.

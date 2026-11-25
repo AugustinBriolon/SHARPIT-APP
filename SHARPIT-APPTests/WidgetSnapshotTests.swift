@@ -309,6 +309,19 @@ private func trained(_ day: String, _ sport: V1ActivityType, km: Double, minutes
     #expect(kept.allSatisfy { $0.fraction == nil })
 }
 
+@Test func theLockScreenReadsTheNightAndTheRecoveryUnderTheVerdict() {
+    var day = WidgetSnapshot.Day(fold: fold(sessions: []))
+    day.sleep = WidgetSnapshot.Sleep(score: 78, caption: nil)
+    day.recovery = WidgetSnapshot.Sleep(score: 61, caption: nil)
+    #expect(WidgetResumeRing.lockScreenLine(day: day) == "Sommeil 78 · Récup. 61")
+    // A figure not known yet is left out, never shown as a dash on the Lock Screen.
+    day.recovery = nil
+    #expect(WidgetResumeRing.lockScreenLine(day: day) == "Sommeil 78")
+    day.sleep = nil
+    #expect(WidgetResumeRing.lockScreenLine(day: day) == nil)
+    #expect(WidgetResumeRing.lockScreenLine(day: nil) == nil)
+}
+
 // MARK: - Dernière activité
 
 @Test func aRouteIsFittedToAUnitSquareNorthUpWithItsProportions() throws {

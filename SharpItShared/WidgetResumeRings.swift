@@ -44,6 +44,16 @@ nonisolated struct WidgetResumeRing: Equatable, Identifiable, Sendable {
         return rings
     }
 
+    /// The Lock Screen's line under the verdict: the night and the recovery as figures, the two
+    /// rings a glance at the Lock Screen is for. A ring not known yet is left out; nil when none is.
+    static func lockScreenLine(day: WidgetSnapshot.Day?) -> String? {
+        let parts = [
+            day?.sleep?.score.map { String(localized: "Sommeil \($0)") },
+            day?.recovery?.score.map { String(localized: "Récup. \($0)") },
+        ].compactMap { $0 }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
     private static func score(_ kind: Kind, _ score: Int?) -> WidgetResumeRing {
         guard let score else { return WidgetResumeRing(kind: kind, fraction: nil, value: "—") }
         return WidgetResumeRing(kind: kind, fraction: min(max(Double(score) / 100, 0), 1), value: "\(score)")
