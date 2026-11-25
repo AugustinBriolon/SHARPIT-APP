@@ -758,6 +758,8 @@ private struct PlanWeekContent: View {
             }
             .padding(.bottom, SharpitSpacing.xl)
         }
+        // A week turned to opens at its top, as a day does (`scrollsToTop`).
+        .scrollsToTop(whenChanged: store.selectedOffset)
         // The held header and rings are drawn outside their page while a week is turned: a
         // clipped page cut them at its edge, so the title vanished for the second half of a swipe.
         .scrollClipDisabled()

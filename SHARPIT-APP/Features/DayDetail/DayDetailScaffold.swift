@@ -98,6 +98,7 @@ struct DayDetailScaffold<Payload: V1DayResource, Content: View>: View {
                 content(payload)
                     .padding(.top, SharpitSpacing.md)
             }
+            .scrollsToTop(whenChanged: store.selectedDay)
             .modifier(ScrollUnderGlass())
             .refreshable {
                 if let refresh { await refresh() } else { await store.refresh() }

@@ -336,6 +336,9 @@ tile is. A change that moves the layout rides `SharpitMotion.run` rather than ju
 set in hand closing into its line, the map card growing for its legend. Recovery's ring sweeps when
 the screen is opened, never when a day is turned (`RecoveryRingSweep`).
 `SharpitTickGauge` is animatable: a score changed inside an animation sweeps the ticks.
+A day or a week turned to — a swipe, the calendar, « Aujourd'hui » — opens at its top, at once, never
+at the depth the previous one was read to (`scrollsToTop(whenChanged:)` on Résumé, the day screens,
+the journal and Plan's weeks; the athlete's call, 2026-11-25).
 
 The brand mark is the app icon's (`SharpIt.icon`: six dots on a hexagon, `circle.hexagonpath.fill`
 in `SharpitColor.brandMarkGradient`); `SharpitLaunchMark` shows it while a screen cannot be drawn

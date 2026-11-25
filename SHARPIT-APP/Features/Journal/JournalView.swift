@@ -151,6 +151,7 @@ struct JournalView: View {
             .padding(.bottom, 96)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .scrollsToTop(whenChanged: store.selectedDate)
         .scrollDisabled(store.phase == .loading)
         .daySwipe(day: store.selectedDate) { day in Task { await store.selectDate(day) } } neighbor: { _ in
             // The day beside: once the preferences are known, its own lines with their values

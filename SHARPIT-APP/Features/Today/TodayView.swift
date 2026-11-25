@@ -590,6 +590,7 @@ private struct TodayFoldView: View {
             .containerRelativeFrame(.horizontal, alignment: .leading)
         }
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { viewportHeight = $0 }
+        .scrollsToTop(whenChanged: fold.trainingDayId)
         .cliniqueBackdropPage()
         .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
         .modifier(ScrollUnderGlass())
