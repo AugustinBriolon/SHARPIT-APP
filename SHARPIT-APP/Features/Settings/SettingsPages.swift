@@ -52,7 +52,7 @@ struct AccountView: View {
                     SharpitSettingsLabel(
                         title: String(localized: "Abonnement"),
                         detail: isPro || pro?.pro?.subscription != nil
-                            ? ProReadout.status(pro?.pro?.subscription, isPro: isPro)
+                            ? ProReadout.status(pro?.pro?.subscription, isPro: isPro, detail: pro?.appleDetail)
                             : String(localized: "Découvrir"),
                         symbol: "sparkles"
                     )

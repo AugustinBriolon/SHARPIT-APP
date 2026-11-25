@@ -143,7 +143,7 @@ struct SettingsView: View {
 
                 Section {
                     NavigationLink(value: SettingsRoute.pro) {
-                        SharpitSettingsLabel(title: "SharpIt Pro", detail: isPro || pro?.pro?.subscription != nil ? ProReadout.status(pro?.pro?.subscription, isPro: isPro) : String(localized: "Découvrir"), symbol: "sparkles")
+                        SharpitSettingsLabel(title: "SharpIt Pro", detail: isPro || pro?.pro?.subscription != nil ? ProReadout.status(pro?.pro?.subscription, isPro: isPro, detail: pro?.appleDetail) : String(localized: "Découvrir"), symbol: "sparkles")
                     }
                     // Hidden with the Nutrition page: switched off, it shows nowhere.
                     if features.isOn(.nutrition) {

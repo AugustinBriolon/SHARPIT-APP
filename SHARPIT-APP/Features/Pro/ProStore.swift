@@ -11,6 +11,27 @@ nonisolated enum SharpitProProduct {
     static let monthly = "app.sharpit.pro.monthly"
     static let yearly = "app.sharpit.pro.yearly"
     static let all = [monthly, yearly]
+
+    /// Which plan a product is, for the status line.
+    enum Plan: Equatable, Sendable {
+        case monthly, yearly
+
+        init?(productID: String) {
+            switch productID {
+            case SharpitProProduct.monthly: self = .monthly
+            case SharpitProProduct.yearly: self = .yearly
+            default: return nil
+            }
+        }
+    }
+}
+
+/// What this iPhone's App Store account says of the subscription, beside what the web stores: the
+/// plan, the end of a grace period, and the transaction a refund would be asked for.
+nonisolated struct ProAppleDetail: Equatable, Sendable {
+    var plan: SharpitProProduct.Plan?
+    var gracePeriodEndsAt: Date? = nil
+    var transactionID: UInt64
 }
 
 /// SharpIt Pro on the phone (SHARPIT ADR-044): what the web says the athlete has, and every
@@ -39,6 +60,8 @@ final class ProStore {
     private(set) var isFetchingAccountToken = false
     private(set) var storeProducts: [Product] = []
     private(set) var isPurchasing = false
+    /// Read from StoreKit on this iPhone; nil for a subscription bought elsewhere (web, offered).
+    private(set) var appleDetail: ProAppleDetail?
 
     private static let log = Logger(subsystem: "app.sharpit.ios", category: "pro")
 
@@ -90,6 +113,7 @@ final class ProStore {
             }
             publishTier()
             await ensureAppAccountToken(using: token)
+            if isAppleSubscription { await loadAppleDetail() } else { appleDetail = nil }
         } catch {
             if pro == nil { phase = .failed(String(localized: "SharpIt Pro est indisponible pour le moment.")) }
             await ensureAppAccountToken()
@@ -251,6 +275,28 @@ final class ProStore {
         }
     }
 
+    /// The Pro subscription this iPhone's App Store account holds now: its plan, a grace period's
+    /// end, and its transaction for « Demander un remboursement ». Only verified transactions.
+    func loadAppleDetail() async {
+        var found: ProAppleDetail?
+        for await result in Transaction.currentEntitlements {
+            guard case .verified(let transaction) = result,
+                  SharpitProProduct.all.contains(transaction.productID),
+                  transaction.revocationDate == nil
+            else { continue }
+            var grace: Date?
+            if let status = await transaction.subscriptionStatus, case .verified(let renewal) = status.renewalInfo {
+                grace = renewal.gracePeriodExpirationDate
+            }
+            found = ProAppleDetail(
+                plan: SharpitProProduct.Plan(productID: transaction.productID),
+                gracePeriodEndsAt: grace,
+                transactionID: transaction.id
+            )
+        }
+        appleDetail = found
+    }
+
     private func renewalInfo(for transaction: Transaction) async -> String? {
         guard let status = await transaction.subscriptionStatus else { return nil }
         return status.renewalInfo.jwsRepresentation
@@ -259,7 +305,15 @@ final class ProStore {
 
 /// How the subscription reads, in the athlete's words.
 nonisolated enum ProReadout {
-    static func status(_ subscription: V1ProSubscription?, isPro: Bool) -> String {
+    /// The status, named by its plan when this iPhone knows it (« Annuel · Renouvellement le … »).
+    static func status(_ subscription: V1ProSubscription?, isPro: Bool, detail: ProAppleDetail?) -> String {
+        let line = status(subscription, isPro: isPro, gracePeriodEndsAt: detail?.gracePeriodEndsAt)
+        guard subscription != nil, let plan = detail?.plan else { return line }
+        let name = plan == .yearly ? String(localized: "Annuel") : String(localized: "Mensuel")
+        return "\(name) · \(line)"
+    }
+
+    static func status(_ subscription: V1ProSubscription?, isPro: Bool, gracePeriodEndsAt: Date? = nil) -> String {
         guard let subscription else {
             return isPro ? String(localized: "Accès Pro offert") : String(localized: "Version gratuite")
         }
@@ -273,6 +327,9 @@ nonisolated enum ProReadout {
             }
             return String(localized: "Actif")
         case "grace_period":
+            if let gracePeriodEndsAt {
+                return String(localized: "Paiement en attente. L'accès est maintenu jusqu'au \(day(gracePeriodEndsAt))")
+            }
             return String(localized: "Paiement en attente. L'accès est maintenu")
         case "billing_retry":
             return String(localized: "Paiement refusé. Mets à jour ton moyen de paiement")

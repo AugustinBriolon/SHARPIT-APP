@@ -11,6 +11,7 @@ struct ProView: View {
     let store: ProStore
 
     @State private var managesSubscription = false
+    @State private var asksRefund = false
     @State private var isShowingPaywall = false
     @State private var hasAppeared = false
 
@@ -45,6 +46,11 @@ struct ProView: View {
         .task { await store.load() }
         .refreshable { await store.load() }
         .manageSubscriptionsSheet(isPresented: $managesSubscription)
+        // Apple's own refund form, for the subscription this iPhone bought; the answer reaches the
+        // web through the App Store's notification, then here on the next read.
+        .refundRequestSheet(for: store.appleDetail?.transactionID ?? 0, isPresented: $asksRefund) { _ in
+            Task { await store.load() }
+        }
         .onChange(of: managesSubscription) { _, isShowing in
             // Back from the App Store's sheet: the web has heard any change by now, or will.
             if !isShowing { Task { await store.load() } }
@@ -92,7 +98,7 @@ struct ProView: View {
                 .tracking(SharpitTypography.pageTitleTracking)
                 .foregroundStyle(SharpitColor.foreground)
                 .contentTransition(.opacity)
-            Text(ProReadout.status(store.pro?.subscription, isPro: store.isPro))
+            Text(ProReadout.status(store.pro?.subscription, isPro: store.isPro, detail: store.appleDetail))
                 .font(SharpitTypography.meta)
                 .foregroundStyle(SharpitColor.slate)
             if let message = store.message {
@@ -116,6 +122,11 @@ struct ProView: View {
                 Button("Gérer mon abonnement") { managesSubscription = true }
                     .sharpitGlassButton(prominent: false)
                     .frame(maxWidth: .infinity)
+                if store.appleDetail != nil {
+                    Button("Demander un remboursement") { asksRefund = true }
+                        .font(SharpitTypography.meta.weight(.semibold))
+                        .foregroundStyle(SharpitColor.primary)
+                }
             }
             if !store.isPro || store.isAppleSubscription {
                 Button {

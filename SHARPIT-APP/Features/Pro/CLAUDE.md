@@ -38,3 +38,10 @@ perks (`ProPerkLine.all`, the server's ids, a glyph in a pillar's hue and one se
 column rising without end in a window of four and a half lines (`ProPerkConveyor`); a finger laid on
 it holds it and moves it either way, and two seconds after it leaves the rise eases back in. Plain list under Reduce Motion, at the accessibility sizes and for
 VoiceOver. No haptic. The paywall does not use `ProPerkGroup`: Réglages › Pro does.
+
+**Subscription detail and refund (2026-11-25).** For an App Store subscription, `ProStore.loadAppleDetail`
+reads this iPhone's current entitlement (verified only): the plan, a grace period's end and the
+transaction. Réglages › Pro and Paramètres then read « Annuel · Renouvellement le … » and, in grace,
+« … maintenu jusqu'au … » (`ProReadout.status(_:isPro:detail:)`). « Demander un remboursement » opens
+Apple's own form (`refundRequestSheet`) on that transaction; the answer reaches the web through the
+App Store's notification and the page reads `/api/v1/pro` again. No offer-code entry (set aside).

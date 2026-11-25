@@ -57065,6 +57065,38 @@
           }
         }
       }
+    },
+    "Paiement en attente. L'accès est maintenu jusqu'au %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Payment pending. Access is kept until %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paiement en attente. L'accès est maintenu jusqu'au %@"
+          }
+        }
+      }
+    },
+    "Demander un remboursement" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Request a refund"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Demander un remboursement"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"
