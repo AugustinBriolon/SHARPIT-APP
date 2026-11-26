@@ -31,9 +31,8 @@ run destination and press Run. On the phone, enable Developer Mode (Settings →
 Security), and trust the developer under Settings → General → VPN & Device Management the
 first time. A free Personal Team signs for 7 days.
 
-WeatherKit and HealthKit are entitled and need a paid team; on a free Personal Team the app
-still builds and runs, but the weather chip reads "Météo indisponible" and Apple Health cannot
-be enabled. Associated Domains is not entitled yet.
+HealthKit is entitled and needs a paid team; on a free Personal Team the app still builds and
+runs, but Apple Health cannot be enabled. Associated Domains is not entitled yet.
 
 ## Brand and type
 
@@ -147,7 +146,8 @@ CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs the same tests 
   Sommeil, Récupération, …) are also kept on disk as the server sent them, so they open without
   the network after a relaunch until the app writes something new, and the day screens read
   ahead three days at a time ([ADR 0021](docs/adr/0021-past-days-are-kept-on-disk-and-read-ahead-three-at-a-time.md))
-- Weather chip: WeatherKit + Core Location (not API weather)
+- Weather: the server's forecast per planned session (« Météo prévue » in its drawer), no WeatherKit
+  ([ADR 0041](docs/adr/0041-weather-is-the-servers-forecast-on-the-session.md))
 - Design system: `SHARPIT-APP/DesignSystem/`. Colour and radius are **generated** from the
   web design system — edit `../SHARPIT/src/lib/brand/brand-tokens.ts` or
   `../SHARPIT/src/app/globals.css`, run `yarn tokens:ios` there, and commit the regenerated

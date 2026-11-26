@@ -10,9 +10,9 @@ App Store Connect. Order follows the launch plan: legal → iOS compliance → p
 | Privacy manifest, app (collected data, required-reason APIs: UserDefaults `CA92.1` + `1C8F.1` app group, file timestamp `C617.1`) | `SHARPIT-APP/PrivacyInfo.xcprivacy` |
 | Privacy manifest, widget extension (UserDefaults through the app group, no collection) | `SharpItWidgets/PrivacyInfo.xcprivacy` |
 | No iCloud entitlement: health data never leaves for iCloud | no `com.apple.developer.icloud-*` in any `.entitlements` |
-| Apple Weather attribution (mark + legal link) | `Features/Today/WeatherToolbarChip.swift` |
+| No WeatherKit and no location: weather is the server's forecast on each session | iOS ADR 0041 |
 | Export compliance: `ITSAppUsesNonExemptEncryption = NO` (HTTPS only) | build settings, app target |
-| Usage strings: Health read/write, location, camera, microphone, speech, calendars, Bluetooth | build settings `INFOPLIST_KEY_NS*` |
+| Usage strings: Health read/write, camera, microphone, speech, calendars, Bluetooth | build settings `INFOPLIST_KEY_NS*` |
 | Account deletion in the app | Paramètres › Confidentialité |
 | Garmin through its Connect Developer Program only: in-app OAuth, data by push (guideline 5.2.2) | iOS ADR 0024 (supersedes 0013, 0023) |
 | SharpIt Pro: StoreKit 2 paywall (`SharpitProPaywallSheet`, App Store prices and intro offer from `Product`) with `appAccountToken`, restore, manage, auto-renew notice, Terms + Privacy links | `Features/Pro/SharpitProPaywallSheet.swift`, `Features/Pro/ProView.swift` |
@@ -97,7 +97,6 @@ Matches the manifest. Tracking: **No**. For every type below: linked to the user
 tracking, purpose App Functionality.
 
 - Health & Fitness: Health, Fitness
-- Location: Precise Location (weather where the athlete trains)
 - Identifiers: User ID
 - Contact Info: Email Address, Name
 - Purchases: Purchase History

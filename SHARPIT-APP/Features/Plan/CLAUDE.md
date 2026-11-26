@@ -131,7 +131,9 @@ days to the race (`PlanPhaseReadout.countdown`). A line reads « Lun. 10 » over
 
 **Séance prévue, Clinique.** The drawer follows its mock-up (`docs/adr/0035`): « Clé » as a pill,
 « Sport · Titre » (`PlannedSessionReadout.title`), the day, the figures centred between two hairlines,
-then « Déroulé » as a table (`PlannedStepTable`: how long, what with its note, the target; a repeated
+then « Météo prévue » when the server's forecast asks something of a session still to do
+(`SessionConditionsSection`: heat, an earlier slot, drink more, indoor option, recovery, rain, cold —
+`docs/adr/0041`; `SharpitScreenDemo session-weather`), then « Déroulé » as a table (`PlannedStepTable`: how long, what with its note, the target; a repeated
 set named once — « 5 fois » — over its lines, held by a rule), the coach's reason and the instruction
 after the steps. The actions sit in one glass bar: the one that readies the session in ink (watch or
 « Lancer la séance »), « Déplacer » (the next seven days) where the plan can be written, and the coach's

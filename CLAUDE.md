@@ -87,15 +87,13 @@ The app target supports `iphoneos` as well as the simulator. The team is not in 
 each machine sets `DEVELOPMENT_TEAM` in the gitignored `Config/Local.xcconfig`, which also
 holds the API origin override.
 
-WeatherKit, HealthKit and Push Notifications (`aps-environment`) are all entitled in
-`SharpIt.entitlements` and all need a paid team. `Config/Info-Extra.plist` declares the
+HealthKit and Push Notifications (`aps-environment`) are both entitled in
+`SharpIt.entitlements` and both need a paid team. `Config/Info-Extra.plist` declares the
 `remote-notification` background mode: the morning-verdict APNs push needs it. No iCloud: the
 cache holds health-derived data (`docs/adr/0009`). Automatic signing stamps `aps-environment` as `production` on an archive, so
-the file keeps `development`. WeatherKit also has to be ticked on the App ID in the developer
-portal, under both Capabilities and App Services; until it is, weatherd logs
-`WDSJWTAuthenticatorServiceListener.Errors Code=2` and the chip reads "Météo indisponible". Xcode reissues the managed profile when an entitlement is added, so a capability that
-silently does nothing — the weather chip reading "Météo indisponible" was exactly this — usually
-means the entitlement is missing rather than the code being wrong.
+the file keeps `development`. Xcode reissues the managed profile when an entitlement is added, so a
+capability that silently does nothing — the old WeatherKit chip reading "Météo indisponible" was
+exactly this — usually means the entitlement (or its App ID tick) is missing rather than the code being wrong.
 
 ## Architecture
 
@@ -241,8 +239,10 @@ a sport and a day, never a health figure. Each kind is replaced whole when its l
 weeks 0–2, `ActivityView`, `GoalStore`), the identifier is the page's `https://sharpit.app` link, a tap
 comes back through `onContinueUserActivity` into `IncomingLinkInbox`, and `LocalAccountData` wipes the index.
 
-**Weather** comes from WeatherKit + Core Location (`LocationWeatherService`), never from
-the API.
+**Weather** is the server's, never the iPhone's (`docs/adr/0041`): each planned session carries
+its Open-Meteo forecast as `environmentContext`, decoded into `V1SessionConditions` and shown under
+« Météo prévue » in its drawer (`SessionConditionsSection`) while it is still to do. No WeatherKit,
+no location prompt (`theAppAsksForNeitherWeatherKitNorLocation`).
 
 **Framework callbacks.** Callbacks handed to system frameworks (Speech, AVAudio, HealthKit…) are
 built in nonisolated functions: main-actor closures trap when the framework calls them on its own
