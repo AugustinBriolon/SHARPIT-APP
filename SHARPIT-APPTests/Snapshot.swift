@@ -76,9 +76,21 @@ private func render<V: View>(_ view: V, width: CGFloat, style: UIUserInterfaceSt
 
     let format = UIGraphicsImageRendererFormat()
     format.scale = 2
-    return UIGraphicsImageRenderer(size: size, format: format).image { _ in
-        host.view.drawHierarchy(in: CGRect(origin: .zero, size: size), afterScreenUpdates: true)
+    let capture = {
+        UIGraphicsImageRenderer(size: size, format: format).image { _ in
+            host.view.drawHierarchy(in: CGRect(origin: .zero, size: size), afterScreenUpdates: true)
+        }
     }
+    // A chart draws its marks a pass after its frame, which keeps the size the same: the size
+    // settling above cannot see it. Capture until two pictures in a row agree.
+    var image = capture()
+    for _ in 0..<20 {
+        try await Task.sleep(for: .milliseconds(150))
+        let next = capture()
+        if SnapshotDifference(image, next).share == 0 { return next }
+        image = next
+    }
+    return image
 }
 
 /// The share of pixels that moved by more than a rasterising wobble.
