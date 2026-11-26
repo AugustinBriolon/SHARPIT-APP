@@ -315,7 +315,7 @@ nonisolated enum ProReadout {
 
     static func status(_ subscription: V1ProSubscription?, isPro: Bool, gracePeriodEndsAt: Date? = nil) -> String {
         guard let subscription else {
-            return isPro ? String(localized: "Accès Pro offert") : String(localized: "Version gratuite")
+            return isPro ? String(localized: "Accès Pro offert") : String(localized: "Gratuit")
         }
         switch subscription.status {
         case "active":

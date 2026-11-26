@@ -34,7 +34,7 @@ struct SharpitProPaywallSheet: View {
             VStack(alignment: .leading, spacing: 0) {
                 CliniqueStatusPill("SharpIt Pro", status: .pro)
                     .revealed(hasAppeared, index: 0)
-                Text(sessions == nil ? String(localized: "Un coach qui lit tes données tous les matins") : String(localized: "Ta semaine est prête"))
+                Text(sessions == nil ? String(localized: "Ta prépa de course, réajustée chaque matin à ta forme") : String(localized: "Ta semaine est prête. Pro la tient à jour."))
                     .font(SharpitTypography.system(size: 30, weight: .semibold, relativeTo: .largeTitle))
                     .tracking(-0.6)
                     .foregroundStyle(SharpitColor.foreground)
@@ -104,7 +104,7 @@ struct SharpitProPaywallSheet: View {
             }
         } else if store.storeProducts.isEmpty, hasLoadedOffers {
             VStack(spacing: SharpitSpacing.xs) {
-                Text("Impossible de charger les offres.")
+                Text("Les offres ne se chargent pas. Vérifie ta connexion, puis réessaie.")
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.slate)
                 Button("Réessayer") { Task { await loadOffers() } }
@@ -200,9 +200,9 @@ struct SharpitProPaywallSheet: View {
     private var buttonTitle: String {
         if store.isPurchasing { return String(localized: "Activation…") }
         if selectedProductId == SharpitProProduct.monthly, let introOffer {
-            return String(localized: "Commencer à \(introOffer.displayPrice)")
+            return String(localized: "Commencer · \(introOffer.displayPrice) le 1er mois")
         }
-        return String(localized: "Passer à Pro")
+        return sessions == nil ? String(localized: "Débloquer mon plan") : String(localized: "Débloquer ma semaine")
     }
 
     private var actionDock: some View {
@@ -234,10 +234,25 @@ struct SharpitProPaywallSheet: View {
         .animation(SharpitMotion.fade, value: errorMessage)
     }
 
+    /// What renews and at what price, for the plan selected, next to the button (App Review 3.1.2(a)).
+    private var renewalTerms: String {
+        switch selected {
+        case let product? where product.id == SharpitProProduct.monthly && introOffer != nil:
+            String(localized: "Après le 1er mois, \(product.displayPrice) / mois. Renouvellement automatique, résiliable à tout moment dans les réglages de ton compte Apple.")
+        case let product? where product.id == SharpitProProduct.monthly:
+            String(localized: "\(product.displayPrice) / mois, renouvelé automatiquement, résiliable à tout moment dans les réglages de ton compte Apple.")
+        case let product?:
+            String(localized: "\(product.displayPrice) / an, renouvelé automatiquement, résiliable à tout moment dans les réglages de ton compte Apple.")
+        case nil:
+            String(localized: "Renouvellement automatique, résiliable à tout moment dans les réglages de ton compte Apple.")
+        }
+    }
+
     private var legalFooter: some View {
         VStack(spacing: SharpitSpacing.xxs) {
-            Text("Renouvellement automatique, résiliable à tout moment.")
+            Text(renewalTerms)
                 .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: SharpitSpacing.md) {
                 Button {
                     Task { await restore() }

@@ -14886,18 +14886,18 @@
         }
       }
     },
-    "Commencer à %@" : {
+    "Commencer · %@ le 1er mois" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Start at %@"
+            "value" : "Start for %@ the first month"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Commencer à %@"
+            "value" : "Commencer · %@ le 1er mois"
           }
         }
       }
@@ -22067,18 +22067,18 @@
         }
       }
     },
-    "Essayer Pro" : {
+    "Voir Pro" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Try Pro"
+            "value" : "See Pro"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Essayer Pro"
+            "value" : "Voir Pro"
           }
         }
       }
@@ -26127,18 +26127,18 @@
         }
       }
     },
-    "Impossible de charger les offres." : {
+    "Les offres ne se chargent pas. Vérifie ta connexion, puis réessaie." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Couldn't load the plans."
+            "value" : "Couldn't load the offers. Check your connection and try again."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Impossible de charger les offres."
+            "value" : "Les offres ne se chargent pas. Vérifie ta connexion, puis réessaie."
           }
         }
       }
@@ -29070,18 +29070,18 @@
         }
       }
     },
-    "Le coach écrit ta semaine et la tient à jour avec SharpIt Pro. Tes séances déjà au plan restent à toi." : {
+    "Le coach écrit ta semaine et la réajuste quand ta forme change. Tes séances déjà au plan restent à toi." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The coach writes your week and keeps it up to date with SharpIt Pro. The sessions already in your plan stay yours."
+            "value" : "Your coach writes your week and adjusts it when your form changes. Sessions already in your plan stay yours."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Le coach écrit ta semaine et la tient à jour avec SharpIt Pro. Tes séances déjà au plan restent à toi."
+            "value" : "Le coach écrit ta semaine et la réajuste quand ta forme change. Tes séances déjà au plan restent à toi."
           }
         }
       }
@@ -29150,18 +29150,18 @@
         }
       }
     },
-    "Le coach lit chaque séance avec SharpIt Pro : ce qui a marché, ce qui a coûté, ce que ça change pour la suite." : {
+    "Le coach lit cette séance : ce qui a marché, ce qui a coûté, ce que ça change pour la suite." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The coach reads every session with SharpIt Pro: what worked, what it cost, what it changes for what comes next."
+            "value" : "Your coach reads this session: what worked, what it cost, what changes next."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Le coach lit chaque séance avec SharpIt Pro : ce qui a marché, ce qui a coûté, ce que ça change pour la suite."
+            "value" : "Le coach lit cette séance : ce qui a marché, ce qui a coûté, ce que ça change pour la suite."
           }
         }
       }
@@ -29343,18 +29343,18 @@
         }
       }
     },
-    "Le coach réajuste tes séances à venir avec SharpIt Pro. Tes séances déjà au plan restent à toi." : {
+    "Séance ratée ? Le coach réajuste la suite de ta semaine. Tes séances déjà au plan restent à toi." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The coach readjusts your upcoming sessions with SharpIt Pro. The sessions already in your plan stay yours."
+            "value" : "Missed a session? Your coach reworks the rest of your week. Sessions already in your plan stay yours."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Le coach réajuste tes séances à venir avec SharpIt Pro. Tes séances déjà au plan restent à toi."
+            "value" : "Séance ratée ? Le coach réajuste la suite de ta semaine. Tes séances déjà au plan restent à toi."
           }
         }
       }
@@ -37433,18 +37433,18 @@
         }
       }
     },
-    "Passer à Pro" : {
+    "Débloquer mon plan" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Go Pro"
+            "value" : "Unlock my plan"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Passer à Pro"
+            "value" : "Débloquer mon plan"
           }
         }
       }
@@ -37969,18 +37969,18 @@
         }
       }
     },
-    "Plan personnalisé par ton coach" : {
+    "Écrite pour ton objectif, tes jours dispo et ta forme" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Plan tailored by your coach"
+            "value" : "Built around your goal, your available days and your form"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Plan personnalisé par ton coach"
+            "value" : "Écrite pour ton objectif, tes jours dispo et ta forme"
           }
         }
       }
@@ -38676,18 +38676,18 @@
         }
       }
     },
-    "Pose tes questions au coach qui connaît tes données, avec SharpIt Pro. Tes séances et ta santé restent ouvertes sans abonnement." : {
+    "Pose tes questions à un coach qui voit ton sommeil, ta charge et ton plan. Tes séances et ta santé restent ouvertes sans abonnement." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ask the coach who knows your data, with SharpIt Pro. Your sessions and your health stay open without a subscription."
+            "value" : "Ask a coach who sees your sleep, load and plan. Your sessions and health stay open without a subscription."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pose tes questions au coach qui connaît tes données, avec SharpIt Pro. Tes séances et ta santé restent ouvertes sans abonnement."
+            "value" : "Pose tes questions à un coach qui voit ton sommeil, ta charge et ton plan. Tes séances et ta santé restent ouvertes sans abonnement."
           }
         }
       }
@@ -41857,18 +41857,18 @@
         }
       }
     },
-    "Renouvellement automatique, résiliable à tout moment." : {
+    "Renouvellement automatique, résiliable à tout moment dans les réglages de ton compte Apple." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Renews automatically, cancel anytime."
+            "value" : "Renews automatically; cancel anytime in your Apple account settings."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Renouvellement automatique, résiliable à tout moment."
+            "value" : "Renouvellement automatique, résiliable à tout moment dans les réglages de ton compte Apple."
           }
         }
       }
@@ -45815,18 +45815,18 @@
         }
       }
     },
-    "Semaine débloquée avec SharpIt Pro" : {
+    "Ta semaine complète avec SharpIt Pro" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Week unlocked with SharpIt Pro"
+            "value" : "Your full week with SharpIt Pro"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Semaine débloquée avec SharpIt Pro"
+            "value" : "Ta semaine complète avec SharpIt Pro"
           }
         }
       }
@@ -53104,18 +53104,18 @@
         }
       }
     },
-    "Un coach qui lit tes données tous les matins" : {
+    "Ta prépa de course, réajustée chaque matin à ta forme" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "A coach that reads your data every morning"
+            "value" : "Your race prep, adjusted to how you feel each morning"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Un coach qui lit tes données tous les matins"
+            "value" : "Ta prépa de course, réajustée chaque matin à ta forme"
           }
         }
       }
@@ -54680,22 +54680,6 @@
         }
       }
     },
-    "Version gratuite" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Free version"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Version gratuite"
-          }
-        }
-      }
-    },
     "VFC" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -55081,18 +55065,18 @@
         }
       }
     },
-    "Volume, charge, sommeil et récupération de la semaine, synthétisés par le coach, avec un plan pour la semaine suivante." : {
+    "Le coach fait le point sur ta semaine et prépare la suivante." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Volume, load, sleep and recovery for the week, summed up by the coach, with a plan for next week."
+            "value" : "Your coach reviews your week and sets up the next one."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Volume, charge, sommeil et récupération de la semaine, synthétisés par le coach, avec un plan pour la semaine suivante."
+            "value" : "Le coach fait le point sur ta semaine et prépare la suivante."
           }
         }
       }
@@ -56410,34 +56394,34 @@
         }
       }
     },
-    "Un coach qui répond avec ta nuit, ta charge et ton plan" : {
+    "Un coach qui répond avec ton sommeil et ta charge du moment" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "A coach that answers with your night, your load and your plan"
+            "value" : "A coach that answers from your sleep and current load"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Un coach qui répond avec ta nuit, ta charge et ton plan"
+            "value" : "Un coach qui répond avec ton sommeil et ta charge du moment"
           }
         }
       }
     },
-    "Un plan qui s'ajuste quand ta forme ou ton agenda change" : {
+    "Séance ratée ou nuit courte : ton plan se réécrit en un geste" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "A plan that adjusts when your form or your schedule changes"
+            "value" : "Missed a session or slept badly? Your plan rewrites itself in one tap"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Un plan qui s'ajuste quand ta forme ou ton agenda change"
+            "value" : "Séance ratée ou nuit courte : ton plan se réécrit en un geste"
           }
         }
       }
@@ -56463,7 +56447,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Every session read: what worked, what cost you"
+            "value" : "Every session read: what worked, what it cost you"
           }
         },
         "fr" : {
@@ -56474,50 +56458,50 @@
         }
       }
     },
-    "Tes habitudes analysées, un ou deux ajustements à tester" : {
+    "Le coach repère tes habitudes qui paient et t'en propose une ou deux à tester" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your habits analysed, one or two changes to try"
+            "value" : "Your coach spots the habits that pay off and gives you one or two to try"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tes habitudes analysées, un ou deux ajustements à tester"
+            "value" : "Le coach repère tes habitudes qui paient et t'en propose une ou deux à tester"
           }
         }
       }
     },
-    "Ta nutrition lue chaque jour face à ton entraînement" : {
+    "Le coach compare ton assiette à ta charge, chaque jour" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your nutrition read every day against your training"
+            "value" : "Your coach checks what you eat against your training, daily"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ta nutrition lue chaque jour face à ton entraînement"
+            "value" : "Le coach compare ton assiette à ta charge, chaque jour"
           }
         }
       }
     },
-    "Ton âge biologique, estimé depuis ta VO₂max" : {
+    "Ton âge forme, estimé depuis ta VO₂max" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your biological age, estimated from your VO₂max"
+            "value" : "Your fitness age, estimated from your VO₂max"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ton âge biologique, estimé depuis ta VO₂max"
+            "value" : "Ton âge forme, estimé depuis ta VO₂max"
           }
         }
       }
@@ -56666,18 +56650,18 @@
         }
       }
     },
-    "Tes séances de course, vélo et natation envoyées sur ta montre Garmin" : {
+    "Tes séances course, vélo et natation, envoyées sur ta Garmin" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your run, ride and swim sessions sent to your Garmin watch"
+            "value" : "Your run, ride and swim sessions, sent to your Garmin"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tes séances de course, vélo et natation envoyées sur ta montre Garmin"
+            "value" : "Tes séances course, vélo et natation, envoyées sur ta Garmin"
           }
         }
       }
@@ -57222,6 +57206,102 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Appuie longuement sur un objectif en cours pour le valider."
+          }
+        }
+      }
+    },
+    "Ta semaine est prête. Pro la tient à jour." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your week is ready. Pro keeps it on track."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ta semaine est prête. Pro la tient à jour."
+          }
+        }
+      }
+    },
+    "Débloquer ma semaine" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unlock my week"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Débloquer ma semaine"
+          }
+        }
+      }
+    },
+    "Débloquer le coaching" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unlock coaching"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Débloquer le coaching"
+          }
+        }
+      }
+    },
+    "Après le 1er mois, %@ / mois. Renouvellement automatique, résiliable à tout moment dans les réglages de ton compte Apple." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "After the first month, %@ / month. Renews automatically; cancel anytime in your Apple account settings."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Après le 1er mois, %@ / mois. Renouvellement automatique, résiliable à tout moment dans les réglages de ton compte Apple."
+          }
+        }
+      }
+    },
+    "%@ / mois, renouvelé automatiquement, résiliable à tout moment dans les réglages de ton compte Apple." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ / month, renews automatically; cancel anytime in your Apple account settings."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ / mois, renouvelé automatiquement, résiliable à tout moment dans les réglages de ton compte Apple."
+          }
+        }
+      }
+    },
+    "%@ / an, renouvelé automatiquement, résiliable à tout moment dans les réglages de ton compte Apple." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ / year, renews automatically; cancel anytime in your Apple account settings."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ / an, renouvelé automatiquement, résiliable à tout moment dans les réglages de ton compte Apple."
           }
         }
       }

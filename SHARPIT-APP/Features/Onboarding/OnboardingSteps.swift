@@ -908,7 +908,7 @@ struct OnboardingFirstWeekStep: View {
                 HStack(spacing: SharpitSpacing.xs) {
                     Image(systemName: "checkmark.seal.fill")
                         .foregroundStyle(SharpitColor.primary)
-                    Text(String(localized: "Semaine débloquée avec SharpIt Pro"))
+                    Text(String(localized: "Ta semaine complète avec SharpIt Pro"))
                         .font(SharpitTypography.meta.weight(.semibold))
                         .foregroundStyle(SharpitColor.primary)
                 }
@@ -916,7 +916,7 @@ struct OnboardingFirstWeekStep: View {
                 HStack(spacing: SharpitSpacing.xs) {
                     Image(systemName: "sparkles")
                         .foregroundStyle(SharpitColor.primary)
-                    Text(String(localized: "Plan personnalisé par ton coach"))
+                    Text(String(localized: "Écrite pour ton objectif, tes jours dispo et ta forme"))
                         .font(SharpitTypography.meta.weight(.semibold))
                         .foregroundStyle(SharpitColor.primary)
                 }

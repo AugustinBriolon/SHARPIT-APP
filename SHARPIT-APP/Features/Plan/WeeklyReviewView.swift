@@ -143,7 +143,7 @@ struct WeeklyReviewView: View {
         case .proRequired:
             SharpitProTeaser(
                 title: String(localized: "Bilan hebdomadaire"),
-                message: String(localized: "Volume, charge, sommeil et récupération de la semaine, synthétisés par le coach, avec un plan pour la semaine suivante.")
+                message: String(localized: "Le coach fait le point sur ta semaine et prépare la suivante.")
             )
         case .failed(let message):
             SharpitStateMessage.failed(message) { Task { await store.load() } }

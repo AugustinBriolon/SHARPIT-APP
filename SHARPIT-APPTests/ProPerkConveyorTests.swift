@@ -13,6 +13,10 @@ import Testing
     #expect(perks.allSatisfy { !$0.sentence.isEmpty })
 }
 
+@Test func thePaywallLeadsWithThePlanThatRepairsItself() {
+    #expect(ProPerkLine.paywall.map(\.id) == ["adaptive-plan", "coach", "session-analysis", "weekly-review", "watch-push"])
+}
+
 @Test func theListComesBackToItsStartWhicheverWayItIsDragged() {
     #expect(ConveyorLoop.wrapped(0, length: 600) == 0)
     #expect(ConveyorLoop.wrapped(610, length: 600) == 10)

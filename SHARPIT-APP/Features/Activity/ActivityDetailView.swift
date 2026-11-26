@@ -1168,7 +1168,7 @@ private struct ActivityDetailContent: View {
             } else if narrativeNeedsPro {
                 SharpitProTeaser(
                     title: String(localized: "Analyse de séance"),
-                    message: String(localized: "Le coach lit chaque séance avec SharpIt Pro : ce qui a marché, ce qui a coûté, ce que ça change pour la suite.")
+                    message: String(localized: "Le coach lit cette séance : ce qui a marché, ce qui a coûté, ce que ça change pour la suite.")
                 )
             } else {
                 Text("SharpIt croise ta séance, ton ressenti et les données disponibles pour te donner une lecture claire et actionnable.")

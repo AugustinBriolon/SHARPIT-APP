@@ -69,7 +69,7 @@ struct ProView: View {
     @ViewBuilder
     private var purchaseSection: some View {
         if store.appAccountToken != nil {
-            SharpitPrimaryButton(title: String(localized: "Passer à Pro")) { isShowingPaywall = true }
+            SharpitPrimaryButton(title: String(localized: "Débloquer le coaching")) { isShowingPaywall = true }
                 .sheet(isPresented: $isShowingPaywall) { SharpitProPaywallSheet(store: store) }
         } else if store.isFetchingAccountToken || store.phase == .loading {
             ProgressView("Préparation de l'abonnement…")

@@ -78,7 +78,7 @@ struct PlanAdapterSheet: View {
         if store.needsPro {
             SharpitProTeaser(
                 title: String(localized: "Plan qui s’adapte"),
-                message: String(localized: "Le coach réajuste tes séances à venir avec SharpIt Pro. Tes séances déjà au plan restent à toi.")
+                message: String(localized: "Séance ratée ? Le coach réajuste la suite de ta semaine. Tes séances déjà au plan restent à toi.")
             )
         } else {
             phaseContent

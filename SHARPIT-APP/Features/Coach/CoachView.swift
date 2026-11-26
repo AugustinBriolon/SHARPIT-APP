@@ -393,7 +393,7 @@ struct CoachView: View {
         if store.needsPro {
             SharpitProTeaser(
                 title: String(localized: "Coach"),
-                message: String(localized: "Pose tes questions au coach qui connaît tes données, avec SharpIt Pro. Tes séances et ta santé restent ouvertes sans abonnement.")
+                message: String(localized: "Pose tes questions à un coach qui voit ton sommeil, ta charge et ton plan. Tes séances et ta santé restent ouvertes sans abonnement.")
             )
             .padding(.horizontal, SharpitSpacing.pageInset)
             .padding(.top, SharpitSpacing.xs)

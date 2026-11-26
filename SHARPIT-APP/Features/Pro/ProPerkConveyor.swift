@@ -11,17 +11,22 @@ nonisolated struct ProPerkLine: Identifiable, Equatable, Sendable {
     let sentence: String
 
     static let all: [ProPerkLine] = [
-        ProPerkLine(id: "coach", symbol: "bubble.left", pillar: .coach, sentence: String(localized: "Un coach qui répond avec ta nuit, ta charge et ton plan")),
-        ProPerkLine(id: "adaptive-plan", symbol: "calendar", pillar: .recovery, sentence: String(localized: "Un plan qui s'ajuste quand ta forme ou ton agenda change")),
+        ProPerkLine(id: "coach", symbol: "bubble.left", pillar: .coach, sentence: String(localized: "Un coach qui répond avec ton sommeil et ta charge du moment")),
+        ProPerkLine(id: "adaptive-plan", symbol: "calendar", pillar: .recovery, sentence: String(localized: "Séance ratée ou nuit courte : ton plan se réécrit en un geste")),
         ProPerkLine(id: "weekly-review", symbol: "chart.bar", pillar: .sleep, sentence: String(localized: "Le bilan de ta semaine, et la suivante déjà prête")),
         ProPerkLine(id: "session-analysis", symbol: "figure.run", pillar: .recovery, sentence: String(localized: "Chaque séance lue : ce qui a marché, ce qui a coûté")),
-        ProPerkLine(id: "journal-coach-read", symbol: "checklist", pillar: .coach, sentence: String(localized: "Tes habitudes analysées, un ou deux ajustements à tester")),
-        ProPerkLine(id: "nutrition-reading", symbol: "flame", pillar: .nutrition, sentence: String(localized: "Ta nutrition lue chaque jour face à ton entraînement")),
-        ProPerkLine(id: "biological-age", symbol: "heart", pillar: .sleep, sentence: String(localized: "Ton âge biologique, estimé depuis ta VO₂max")),
-        ProPerkLine(id: "watch-push", symbol: "applewatch", pillar: .recovery, sentence: String(localized: "Tes séances de course, vélo et natation envoyées sur ta montre Garmin")),
+        ProPerkLine(id: "journal-coach-read", symbol: "checklist", pillar: .coach, sentence: String(localized: "Le coach repère tes habitudes qui paient et t'en propose une ou deux à tester")),
+        ProPerkLine(id: "nutrition-reading", symbol: "flame", pillar: .nutrition, sentence: String(localized: "Le coach compare ton assiette à ta charge, chaque jour")),
+        ProPerkLine(id: "biological-age", symbol: "heart", pillar: .sleep, sentence: String(localized: "Ton âge forme, estimé depuis ta VO₂max")),
+        ProPerkLine(id: "watch-push", symbol: "applewatch", pillar: .recovery, sentence: String(localized: "Tes séances course, vélo et natation, envoyées sur ta Garmin")),
         ProPerkLine(id: "extra-widgets", symbol: "square.grid.2x2", pillar: .sleep, sentence: String(localized: "Sommeil, poids, volume et régularité sur ton écran d'accueil")),
         ProPerkLine(id: "support", symbol: "hand.raised", pillar: .nutrition, sentence: String(localized: "SharpIt sans publicité ni revente de données, grâce à toi")),
     ]
+
+    /// The paywall's few lines, the plan that repairs itself first; Réglages › Pro lists the rest
+    /// from the server.
+    static let paywall: [ProPerkLine] = ["adaptive-plan", "coach", "session-analysis", "weekly-review", "watch-push"]
+        .compactMap { id in all.first { $0.id == id } }
 }
 
 /// Where a list that repeats without end stands: pure, so the motion is a function of the clock.
@@ -63,12 +68,12 @@ nonisolated enum ConveyorLoop {
     }
 }
 
-/// Everything Pro adds, rising without end under the paywall's title. A finger laid on the list
+/// What Pro adds, rising without end under the paywall's title. A finger laid on the list
 /// holds it and can take it either way; two seconds after it leaves, the rise eases back in
 /// (the athlete's request, 2026-11-24). Under
 /// Reduce Motion or at the accessibility text sizes it is the plain list.
 struct ProPerkConveyor: View {
-    var perks: [ProPerkLine] = ProPerkLine.all
+    var perks: [ProPerkLine] = ProPerkLine.paywall
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var typeSize

@@ -75,7 +75,7 @@ struct PlanGeneratorSheet: View {
         if store.needsPro {
             SharpitProTeaser(
                 title: String(localized: "Plan qui s’adapte"),
-                message: String(localized: "Le coach écrit ta semaine et la tient à jour avec SharpIt Pro. Tes séances déjà au plan restent à toi.")
+                message: String(localized: "Le coach écrit ta semaine et la réajuste quand ta forme change. Tes séances déjà au plan restent à toi.")
             )
         } else {
             phaseContent

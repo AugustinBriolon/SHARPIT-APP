@@ -37,7 +37,7 @@ struct SharpitProTeaser: View {
                 .foregroundStyle(SharpitColor.slate)
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
-            Text("Essayer Pro")
+            Text("Voir Pro")
                 .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .subheadline))
                 .foregroundStyle(SharpitColor.primaryForeground)
                 .padding(.horizontal, 22)
