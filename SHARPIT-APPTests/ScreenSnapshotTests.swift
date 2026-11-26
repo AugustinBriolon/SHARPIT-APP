@@ -84,6 +84,16 @@ struct ScreenSnapshotTests {
         try await assertSnapshot(onCanvas(summary.fixedSize(horizontal: false, vertical: true)), named: "planned-session", style: style)
     }
 
+    /// A hot, wet day: « Météo prévue » between the figures and the steps, one line per advisory.
+    @Test(arguments: [UIUserInterfaceStyle.light, .dark])
+    func thePlannedSessionSaysWhatTheForecastAsks(style: UIUserInterfaceStyle) async throws {
+        let preview = PlannedSessionPreview.demo(conditions: [.reduceIntensity, .hydration, .rainRisk])
+        let summary = PlannedSessionSummary(
+            preview: preview, steps: preview.steps, stepsAreDerived: false
+        ) { EmptyView() }
+        try await assertSnapshot(onCanvas(summary.fixedSize(horizontal: false, vertical: true)), named: "planned-session-weather", style: style)
+    }
+
     /// The stretches open, answered: both tags, the moves, the choice with « Fait » picked.
     private func answeredStretches() throws -> some View {
         var routine = try #require(PlannedSessionPreview.demo.routines?.cooldown)

@@ -137,7 +137,9 @@ extension V1PlannedSessionItem {
             isKey: isKey,
             // The watch keeps what was sent: a new day reads as moved until it is sent again.
             garminWorkoutId: garminWorkoutId,
-            garminWorkoutScheduledDate: garminWorkoutScheduledDate
+            garminWorkoutScheduledDate: garminWorkoutScheduledDate,
+            // A forecast holds for one day and one sport: the server reads it again after the write.
+            conditions: sportChanged || !Calendar.current.isDate(draft.day, inSameDayAs: date) ? nil : conditions
         )
     }
 }

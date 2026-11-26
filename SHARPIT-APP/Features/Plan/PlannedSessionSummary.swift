@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// What a session holds, top to bottom: who and when, its figures, its steps, then why the coach
+/// What a session holds, top to bottom: who and when, its figures, what the forecast asks, its steps, then why the coach
 /// wrote it. Mobility and stretches live in their own drawer (`SessionRoutinesSheet`). Shared by the
 /// planned session's drawer and the proposal's page, so both read the same; each screen adds
 /// its own actions under the why.
@@ -21,6 +21,9 @@ struct PlannedSessionSummary<Actions: View>: View {
                 }
             }
             actions
+            if !preview.conditions.isEmpty {
+                SessionConditionsSection(advisories: preview.conditions)
+            }
             VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
                 if !steps.isEmpty {
                     PlannedSessionBreakdownList(steps: steps, derived: stepsAreDerived)

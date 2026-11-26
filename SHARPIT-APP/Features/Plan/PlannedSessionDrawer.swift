@@ -32,6 +32,9 @@ struct PlannedSessionPreview: Identifiable, Hashable {
     /// One of the week's key sessions (SHARPIT F2).
     let isKey: Bool
 
+    /// What the forecast asks of the session, most pressing first; empty once it is done or past.
+    let conditions: [V1SessionAdvisory]
+
     var id: String { sessionId ?? title }
 
     /// True when the prescription has at least one named exercise to follow on the phone.
@@ -53,8 +56,10 @@ struct PlannedSessionPreview: Identifiable, Hashable {
         stepsAreDerived: Bool,
         routines: V1SessionRoutines? = nil,
         strengthPrescription: JSONValue? = nil,
-        isKey: Bool = false
+        isKey: Bool = false,
+        conditions: [V1SessionAdvisory] = []
     ) {
+        self.conditions = conditions
         self.routines = routines
         self.isKey = isKey
         self.sessionId = sessionId
@@ -122,8 +127,17 @@ extension PlannedSessionPreview {
             stepsAreDerived: session.breakdown?.derived ?? false,
             routines: session.breakdown?.routines,
             strengthPrescription: session.strengthPrescription,
-            isKey: session.isKey
+            isKey: session.isKey,
+            conditions: Self.conditions(of: session)
         )
+    }
+
+    /// A forecast speaks of a session still to do: one done or past has its activity's weather.
+    static func conditions(of session: V1PlannedSessionItem, now: Date = .now) -> [V1SessionAdvisory] {
+        guard session.completed != true,
+              Calendar.current.startOfDay(for: session.date) >= Calendar.current.startOfDay(for: now)
+        else { return [] }
+        return session.conditions?.advisories ?? []
     }
 
     /// Today's own line. Its metrics are already resolved for display, so they travel as

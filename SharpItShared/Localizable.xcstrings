@@ -57305,6 +57305,246 @@
           }
         }
       }
+    },
+    "Météo prévue" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forecast"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Météo prévue"
+          }
+        }
+      }
+    },
+    "Réduire l’intensité prévue" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ease the planned intensity"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réduire l’intensité prévue"
+          }
+        }
+      }
+    },
+    "Envisager un créneau plus tôt" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Consider an earlier slot"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Envisager un créneau plus tôt"
+          }
+        }
+      }
+    },
+    "Hydratation renforcée" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drink more"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hydratation renforcée"
+          }
+        }
+      }
+    },
+    "Alternative en intérieur possible" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Indoor option"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alternative en intérieur possible"
+          }
+        }
+      }
+    },
+    "Récupération plus exigeante" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Harder recovery"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Récupération plus exigeante"
+          }
+        }
+      }
+    },
+    "Pluie probable sur le créneau" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rain likely during the session"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pluie probable sur le créneau"
+          }
+        }
+      }
+    },
+    "Froid marqué attendu" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marked cold expected"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Froid marqué attendu"
+          }
+        }
+      }
+    },
+    "Forte chaleur prévue pour une séance intense : vise la qualité plutôt que la charge." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Strong heat is forecast for a hard session: aim for quality over load."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forte chaleur prévue pour une séance intense : vise la qualité plutôt que la charge."
+          }
+        }
+      }
+    },
+    "Les températures montent dans la journée : un départ matinal limite le stress thermique." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Temperatures rise during the day: an early start limits heat stress."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les températures montent dans la journée : un départ matinal limite le stress thermique."
+          }
+        }
+      }
+    },
+    "Chaleur ou humidité prévues : prévois plus à boire avant et pendant la séance." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Heat or humidity is forecast: plan to drink more before and during the session."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chaleur ou humidité prévues : prévois plus à boire avant et pendant la séance."
+          }
+        }
+      }
+    },
+    "Les conditions pèseront nettement sur ta performance : le home trainer ou le tapis restent une option." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conditions will clearly weigh on your performance: a trainer or treadmill remains an option."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les conditions pèseront nettement sur ta performance : le home trainer ou le tapis restent une option."
+          }
+        }
+      }
+    },
+    "La séance demandera plus de récupération que prévu : garde de la marge les jours suivants." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This session will need more recovery than planned: keep some margin in the days after."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La séance demandera plus de récupération que prévu : garde de la marge les jours suivants."
+          }
+        }
+      }
+    },
+    "De la pluie est attendue : sol glissant, prudence dans les virages et les descentes." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rain is expected: slippery ground, take care in corners and on descents."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De la pluie est attendue : sol glissant, prudence dans les virages et les descentes."
+          }
+        }
+      }
+    },
+    "Températures basses attendues : échauffe-toi plus longtemps, couvre-toi et méfie-toi du verglas." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Low temperatures expected: warm up longer, dress warmly and watch out for ice."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Températures basses attendues : échauffe-toi plus longtemps, couvre-toi et méfie-toi du verglas."
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

@@ -38,12 +38,15 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
     let garminWorkoutId: String?
     /// The day that workout was scheduled on, "yyyy-MM-dd": a moved session no longer matches.
     let garminWorkoutScheduledDate: String?
+    /// What the forecast asks of the session (`environmentContext`), nil until the server read it.
+    let conditions: V1SessionConditions?
 
     enum CodingKeys: String, CodingKey {
         case id, date, startTime, title, type, durationMin, intensity, load, notes, breakdown
         case description, strengthPrescription, endurancePrescription
         case goalId, completed, activityId, activity, brickGroupId, brickOrder, isKey, rationale
         case garminWorkoutId, garminWorkoutScheduledDate
+        case conditions = "environmentContext"
     }
 
     init(
@@ -69,7 +72,8 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
         isKey: Bool = false,
         rationale: String? = nil,
         garminWorkoutId: String? = nil,
-        garminWorkoutScheduledDate: String? = nil
+        garminWorkoutScheduledDate: String? = nil,
+        conditions: V1SessionConditions? = nil
     ) {
         self.id = id
         self.date = date
@@ -94,6 +98,7 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
         self.rationale = rationale
         self.garminWorkoutId = garminWorkoutId
         self.garminWorkoutScheduledDate = garminWorkoutScheduledDate
+        self.conditions = conditions
     }
 
     init(from decoder: Decoder) throws {
@@ -124,6 +129,7 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
         rationale = try container.decodeIfPresent(String.self, forKey: .rationale)
         garminWorkoutId = try? container.decodeIfPresent(String.self, forKey: .garminWorkoutId)
         garminWorkoutScheduledDate = try? container.decodeIfPresent(String.self, forKey: .garminWorkoutScheduledDate)
+        conditions = try? container.decodeIfPresent(V1SessionConditions.self, forKey: .conditions)
     }
 
     /// A JSON `null` read as absent, so « has a prescription » is one nil check.

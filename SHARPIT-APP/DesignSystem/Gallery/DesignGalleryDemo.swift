@@ -783,10 +783,10 @@ struct ScreenDemoHost: View {
                     onSaved: { _ in }
                 )
                 .defaultScrollAnchor(screen.hasSuffix("bottom") ? .bottom : .top)
-            case "session":
+            case "session", "session-weather":
                 // Full screen rather than in its sheet: the simulator cannot drag a detent open.
                 PlannedSessionDrawer(
-                    preview: .demo,
+                    preview: screen == "session" ? .demo : .demo(conditions: [.reduceIntensity, .hydration, .rainRisk]),
                     watch: SessionWatchContext(
                         session: V1PlannedSessionItem(id: "demo", date: PlannedSessionPreview.demoDate, type: "RUN"),
                         client: GarminWorkoutClient(),
@@ -1328,7 +1328,10 @@ extension PlannedSessionPreview {
     /// Monday 26 October 2026, noon: a fixed day so the snapshot does not move with the clock.
     static let demoDate = Date(timeIntervalSince1970: 1_793_008_800)
 
-    static var demo: PlannedSessionPreview {
+    static var demo: PlannedSessionPreview { demo(conditions: []) }
+
+    /// The same run on a hot, wet day (`SharpitScreenDemo session-weather`).
+    static func demo(conditions: [V1SessionAdvisory]) -> PlannedSessionPreview {
         func move(_ name: String, _ dose: String, _ cue: String? = nil) -> V1RoutineMove {
             V1RoutineMove(name: name, dose: dose, cue: cue)
         }
@@ -1366,7 +1369,8 @@ extension PlannedSessionPreview {
                     move("Fente basse, étirement du psoas", "30 s par côté", "Bassin rétroversé, sans cambrer"),
                 ], minutes: 3, source: "coach", optional: true)
             ),
-            isKey: true
+            isKey: true,
+            conditions: conditions
         )
     }
 }
