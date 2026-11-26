@@ -8,9 +8,17 @@ import UIKit
     #expect(Bundle.main.object(forInfoDictionaryKey: "ITSAppUsesNonExemptEncryption") as? Bool == false)
 }
 
-/// WeatherKit requires its legal page wherever its data shows, even before it answered.
-@Test func weatherAttributionAlwaysHasALegalPage() {
-    #expect(AppleWeatherAttribution.fallbackLegalPageURL.host() == "weatherkit.apple.com")
+/// Weather is the server's (Open-Meteo, per session and activity: `docs/adr/0041`): no WeatherKit, whose
+/// attribution got 1.0 rejected, and no location prompt, which only that chip needed.
+@Test func theAppAsksForNeitherWeatherKitNorLocation() throws {
+    let entitlements = URL(filePath: #filePath)
+        .deletingLastPathComponent().deletingLastPathComponent()
+        .appending(path: "SHARPIT-APP/SharpIt.entitlements")
+    let plist = try #require(
+        try PropertyListSerialization.propertyList(from: Data(contentsOf: entitlements), format: nil) as? [String: Any]
+    )
+    #expect(plist["com.apple.developer.weatherkit"] == nil)
+    #expect(Bundle.main.object(forInfoDictionaryKey: "NSLocationWhenInUseUsageDescription") == nil)
 }
 
 /// App Store Connect refuses a HealthKit build without both purpose strings, even read-only.

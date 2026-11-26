@@ -3,7 +3,6 @@ import SwiftUI
 
 struct TodayView: View {
     @State private var store: TodayStore
-    @State private var weather = LocationWeatherService()
     /// Nil without a token or a client: a fixture-backed Today has nothing to pull.
     @State private var sync: ProviderSyncStore?
     private let appleHealth: AppleHealthSource?
@@ -162,7 +161,6 @@ struct TodayView: View {
                 async let refreshNutrition: Void? = nutrition?.load(trainingDayId: store.dayId)
                 async let refreshStatus: Void? = activityStatusStore?.load()
                 _ = await (refreshToday, refreshNutrition, refreshStatus)
-                weather.start()
                 // The pull can take a minute; the gesture ends on what the server has now,
                 // and the screen reloads once the providers have answered.
                 Task { await pullProviders(force: true) }
@@ -258,7 +256,6 @@ struct TodayView: View {
                 // curtain's ceiling instead.
                 launchCurtain?.markReady()
                 Task { await pullProviders(force: false) }
-                weather.start()
                 _ = await (statusRead, nutritionRead)
                 await evaluateRessentiPrompt()
             }
@@ -271,7 +268,7 @@ private enum TodayNav: Hashable {
 }
 
 extension TodayView {
-    /// Mode, Journal and weather, as one row of glass chips.
+    /// Mode and Journal, as one row of glass chips.
     @ViewBuilder
     fileprivate var controlsRow: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
@@ -379,14 +376,11 @@ extension TodayView {
                 HStack(spacing: SharpitSpacing.xs) {
                     statusAndJournalChips
                     Spacer(minLength: 0)
-                    WeatherChip(service: weather)
                 }
                 VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
                     statusAndJournalChips
-                    WeatherChip(service: weather)
                 }
             }
-            .animation(SharpitMotion.reveal, value: weather.reading)
         }
     }
 
@@ -502,7 +496,7 @@ private struct TodayFoldView: View {
     var onAnswerProposal: (Bool) -> Void = { _ in }
     /// Opens the morning check-in, which refines the proposal.
     var onCheckIn: (() -> Void)?
-    /// Mode, Journal and weather — the fold's first row, scrolling away with the rest.
+    /// Mode and Journal — the fold's first row, scrolling away with the rest.
     var controls: AnyView?
 
     /// The athlete's training-mode store. When `current != .active`, an alert line is

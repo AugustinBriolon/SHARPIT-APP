@@ -120,23 +120,6 @@
         }
       }
     },
-    "NSLocationWhenInUseUsageDescription" : {
-      "comment" : "Privacy - Location When In Use Usage Description",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "SharpIt uses your location to show the Apple Weather forecast where you train."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "SHARPIT utilise ta position pour afficher la météo Apple du lieu où tu t'entraînes."
-          }
-        }
-      }
-    },
     "NSMicrophoneUsageDescription" : {
       "comment" : "Privacy - Microphone Usage Description",
       "localizations" : {
