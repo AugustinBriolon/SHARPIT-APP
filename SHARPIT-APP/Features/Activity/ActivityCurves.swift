@@ -129,7 +129,16 @@ struct ActivityChartsSection: View {
     @Binding var selection: [ActivityChartMetric]
 
     @State private var scrubbedMinute: Double?
-    @State private var curves: [ActivityChartMetric: ActivityCurve] = [:]
+    @State private var curves: [ActivityChartMetric: ActivityCurve]
+
+    /// The curves are built here rather than on appearing: the plot's first frame already holds
+    /// its lines, instead of an empty frame the chart fills a pass later.
+    init(samples: [V1ActivityStreamSample], metrics: [ActivityChartMetric], selection: Binding<[ActivityChartMetric]>) {
+        self.samples = samples
+        self.metrics = metrics
+        _selection = selection
+        _curves = State(initialValue: Self.curves(for: metrics, samples: samples))
+    }
 
     private var shownCurves: [ActivityCurve] {
         selection.compactMap { curves[$0] }
@@ -174,7 +183,7 @@ struct ActivityChartsSection: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .onAppear { rebuild() }
+        .onAppear { reconcile() }
         .onChange(of: samples) { _, _ in rebuild() }
         .onChange(of: metrics) { _, _ in reconcile() }
         .onChange(of: scrubbedMinute.map { Int($0 / notchStep) }) { _, notch in
@@ -298,12 +307,17 @@ struct ActivityChartsSection: View {
     }
 
     private func rebuild() {
-        var built: [ActivityChartMetric: ActivityCurve] = [:]
-        for metric in metrics {
-            built[metric] = ActivityCurve(metric: metric, samples: samples)
-        }
-        curves = built
+        curves = Self.curves(for: metrics, samples: samples)
         reconcile()
+    }
+
+    private static func curves(
+        for metrics: [ActivityChartMetric],
+        samples: [V1ActivityStreamSample]
+    ) -> [ActivityChartMetric: ActivityCurve] {
+        Dictionary(uniqueKeysWithValues: metrics.compactMap { metric in
+            ActivityCurve(metric: metric, samples: samples).map { (metric, $0) }
+        })
     }
 
     /// Keeps the selection to what this session recorded, so a ride without heart rate opens on
