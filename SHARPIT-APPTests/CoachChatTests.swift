@@ -329,6 +329,35 @@ private func store(_ client: StubCoachClient = StubCoachClient(deltas: ["Oui"]))
     #expect(CoachDictation.merged(typed: "Salut", heard: "  ") == "Salut")
 }
 
+@Test func aPauseKeepsWhatWasSaidBeforeIt() {
+    var transcript = DictationTranscript()
+    transcript.hear("Comment", closesUtterance: false)
+    transcript.hear("Comment était ma nuit", closesUtterance: true)
+    transcript.hear("Et", closesUtterance: false)
+    transcript.hear("Et est-ce que je peux courir", closesUtterance: false)
+    #expect(transcript.text == "Comment était ma nuit Et est-ce que je peux courir")
+    #expect(CoachDictation.merged(typed: "Salut", heard: transcript.text)
+        == "Salut Comment était ma nuit Et est-ce que je peux courir")
+}
+
+@Test func anUnannouncedRestartKeepsWhatWasSaidBeforeIt() {
+    var transcript = DictationTranscript()
+    transcript.hear("Comment était ma nuit", closesUtterance: false)
+    transcript.hear("Et", closesUtterance: false)
+    transcript.hear("Et demain", closesUtterance: false)
+    #expect(transcript.text == "Comment était ma nuit Et demain")
+}
+
+@Test func aRevisionReplacesTheUtteranceInsteadOfRepeatingIt() {
+    var transcript = DictationTranscript()
+    transcript.hear("Comment était ma nuit", closesUtterance: false)
+    transcript.hear("Comment était ma", closesUtterance: false)
+    transcript.hear("Comment était ma nuit de sommeil", closesUtterance: false)
+    transcript.hear("Quelle était ma nuit de sommeil", closesUtterance: false)
+    transcript.hear("  ", closesUtterance: false)
+    #expect(transcript.text == "Quelle était ma nuit de sommeil")
+}
+
 @Test func tapNeedsALiveMicrophoneFormat() {
     let live = AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 1)!
     #expect(CoachDictation.canTap(live))

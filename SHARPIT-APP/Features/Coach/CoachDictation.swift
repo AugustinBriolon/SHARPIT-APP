@@ -163,15 +163,23 @@ final class CoachDictation {
         self.task = recognitionTask
 
         listeningTask = Task { [weak self] in
+            var transcript = DictationTranscript()
             for await heard in stream {
                 guard let self, self.isListening else { break }
-                onText(Self.merged(typed: typed, heard: heard))
+                transcript.hear(heard.partial, closesUtterance: heard.closesUtterance)
+                onText(Self.merged(typed: typed, heard: transcript.text))
             }
             self?.stop()
         }
     }
 
     private struct DictationUnavailable: Error {}
+
+    /// One recognizer callback: the utterance so far, and whether the recognizer ended it there.
+    private struct Heard: Sendable {
+        let partial: String
+        let closesUtterance: Bool
+    }
 
     // MARK: - Non-isolated Audio & Speech Bridges
 
@@ -188,11 +196,16 @@ final class CoachDictation {
     nonisolated private static func makeSpeechStream(
         with recognizer: SFSpeechRecognizer,
         request: SFSpeechAudioBufferRecognitionRequest
-    ) -> (AsyncStream<String>, SFSpeechRecognitionTask) {
-        let (stream, continuation) = AsyncStream.makeStream(of: String.self)
+    ) -> (AsyncStream<Heard>, SFSpeechRecognitionTask) {
+        let (stream, continuation) = AsyncStream.makeStream(of: Heard.self)
         let task = recognizer.recognitionTask(with: request) { result, error in
             if let result {
-                continuation.yield(result.bestTranscription.formattedString)
+                // Metadata comes only with the result that ends an utterance; the next partial
+                // starts from nothing.
+                continuation.yield(Heard(
+                    partial: result.bestTranscription.formattedString,
+                    closesUtterance: result.speechRecognitionMetadata != nil
+                ))
             }
             if error != nil || (result?.isFinal ?? false) {
                 continuation.finish()
