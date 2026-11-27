@@ -16,6 +16,8 @@ extension ActivityStatusId {
 /// The toolbar chip that opens the mode drawer, and the drawer itself.
 struct ActivityStatusButton: View {
     @Bindable var store: ActivityStatusStore
+    /// The past day Résumé shows, `yyyy-MM-dd`; nil is today, whose mode is the current one.
+    var day: String?
     /// In Résumé's chip row the mode is named; a toolbar slot is a fixed circle under Liquid
     /// Glass, which clips a label, so there the symbol and colour travel alone.
     var showsLabel = false
@@ -24,33 +26,37 @@ struct ActivityStatusButton: View {
     @Environment(\.colorScheme) private var colorScheme
     @State private var isPresented = false
 
+    private var status: ActivityStatusId { store.status(on: day) ?? .active }
+
     var body: some View {
         Button {
             isPresented = true
         } label: {
             if showsLabel {
                 HStack(spacing: SharpitSpacing.xs) {
-                    Image(systemName: store.store.status.symbolName)
-                        .foregroundStyle(store.store.status.tone)
+                    Image(systemName: status.symbolName)
+                        .foregroundStyle(status.tone)
                         .contentTransition(.symbolEffect(.replace))
-                    Text(store.store.status.label)
+                    Text(status.label)
                         .foregroundStyle(SharpitColor.foreground)
                         .contentTransition(.opacity)
                 }
                 .sharpitGlassChip()
             } else {
-                Image(systemName: store.store.status.symbolName)
-                    .foregroundStyle(store.store.status.tone)
+                Image(systemName: status.symbolName)
+                    .foregroundStyle(status.tone)
             }
         }
         .buttonStyle(.sharpitPressable)
-        .accessibilityLabel("Statut d'activité — \(store.store.status.label)")
+        .accessibilityLabel("Statut d'activité — \(status.label)")
         .accessibilityHint("Changer ton statut d'activité")
         .sheet(isPresented: $isPresented) {
-            ActivityStatusDrawer(store: store)
+            ActivityStatusDrawer(store: store, day: day)
                 .environment(\.colorScheme, drawerScheme ?? colorScheme)
         }
-        .task { await store.loadIfNeeded() }
+        .task(id: day) {
+            if let day { await store.loadDay(day) } else { await store.loadIfNeeded() }
+        }
     }
 }
 
@@ -59,6 +65,8 @@ struct ActivityStatusButton: View {
 /// day, and the list of rows it replaced was another app's).
 struct ActivityStatusDrawer: View {
     @Bindable var store: ActivityStatusStore
+    /// A past day set after the fact; nil sets the current mode.
+    var day: String?
     @Environment(\.dismiss) private var dismiss
 
     /// What the wheel shows. It follows the store (a read, a refused write) and writes on a turn.
@@ -72,6 +80,12 @@ struct ActivityStatusDrawer: View {
                 .foregroundStyle(SharpitColor.foreground)
                 .accessibilityAddTraits(.isHeader)
                 .padding(.trailing, 56)
+
+            if let day {
+                Text(ActivityStatusDate.label(for: day))
+                    .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                    .foregroundStyle(SharpitColor.slate)
+            }
 
             Picker("Statut d'activité", selection: $selection) {
                 ForEach(ActivityStatusId.allCases, id: \.self) { status in
@@ -101,14 +115,18 @@ struct ActivityStatusDrawer: View {
         .presentationDetents([.height(340)])
         .sharpitSheet()
         .presentationDragIndicator(.visible)
-        .onAppear { selection = store.store.status }
-        .onChange(of: store.store.status) { _, status in
-            if selection != status { selection = status }
+        .onAppear { selection = store.status(on: day) ?? .active }
+        .onChange(of: store.status(on: day)) { _, status in
+            if let status, selection != status { selection = status }
         }
         .onChange(of: selection) { _, status in
-            guard status != store.store.status else { return }
-            // Set from the phone, a mode holds until it is changed: no length is asked here.
-            Task { await store.apply(status: status, retention: .untilModified) }
+            guard status != store.status(on: day) else { return }
+            if let day {
+                Task { await store.apply(status: status, on: day) }
+            } else {
+                // Set from the phone, a mode holds until it is changed: no length is asked here.
+                Task { await store.apply(status: status, retention: .untilModified) }
+            }
         }
     }
 }

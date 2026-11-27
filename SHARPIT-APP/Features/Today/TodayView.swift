@@ -387,7 +387,12 @@ extension TodayView {
     @ViewBuilder
     private var statusAndJournalChips: some View {
         if let activityStatusStore {
-            ActivityStatusButton(store: activityStatusStore, showsLabel: true, drawerScheme: colorScheme)
+            ActivityStatusButton(
+                store: activityStatusStore,
+                day: store.isToday ? nil : store.dayId,
+                showsLabel: true,
+                drawerScheme: colorScheme
+            )
                 .fixedSize()
         }
         if features.isOn(.journal), journalClient != nil, wellnessClient != nil, tokenProvider != nil {

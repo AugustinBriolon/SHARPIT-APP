@@ -14,4 +14,6 @@ menu, the coach's memory (context, trips) from Coach's toolbar.
 (`docs/adr/0036`): a title and a wheel of the four modes, nothing else. Turning the wheel writes the
 mode, held until changed — no description, no length, no button, and no date on the chip (the
 athlete's call, 2026-11-21: the mode is kept day by day). `ActivityStatusStore` shows the newest
-write's answer only and falls back to the last store the server confirmed.
+write's answer only and falls back to the last store the server confirmed. On a past day of Résumé the chip
+and the drawer carry that day (`day:`): they read it from `/api/v1/activity-status/days` and set it
+after the fact (`apply(status:on:)`), leaving today's mode alone (SHARPIT ADR-150).

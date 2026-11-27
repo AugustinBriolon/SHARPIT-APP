@@ -120,6 +120,21 @@ nonisolated struct V1ActivityStatusEnvelope: Decodable {
     let store: V1ActivityStatusStore
 }
 
+/// The mode one day was spent in, `yyyy-MM-dd`: set after the fact, else the mode the
+/// athlete was in that day, else `active`.
+nonisolated struct V1ActivityStatusDay: Codable, Equatable, Sendable {
+    let day: String
+    let status: ActivityStatusId
+}
+
+nonisolated struct V1ActivityStatusDaysEnvelope: Decodable {
+    let days: [V1ActivityStatusDay]
+}
+
+nonisolated struct V1ActivityStatusDayEnvelope: Decodable {
+    let day: V1ActivityStatusDay
+}
+
 /// The PUT body, which is the store's fields unwrapped.
 nonisolated struct V1ActivityStatusWrite: Encodable, Equatable, Sendable {
     let status: ActivityStatusId

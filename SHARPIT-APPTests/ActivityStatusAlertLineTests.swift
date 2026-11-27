@@ -60,6 +60,12 @@ private final class StubStatusClient: ActivityStatusServing {
     func setActivityStatus(_ write: V1ActivityStatusWrite, token _: String) async throws -> V1ActivityStatusStore {
         V1ActivityStatusStore(status: write.status, retention: write.retention ?? .untilModified, travelId: write.travelId)
     }
+
+    func activityStatusDays(from: String, to _: String, token _: String) async throws -> [V1ActivityStatusDay] { [] }
+
+    func setActivityStatus(_ status: ActivityStatusId, on day: String, token _: String) async throws -> V1ActivityStatusDay {
+        V1ActivityStatusDay(day: day, status: status)
+    }
 }
 
 @MainActor

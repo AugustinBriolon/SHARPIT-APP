@@ -23,6 +23,15 @@ final class ActivityStatusStore {
     /// offering a second control to change it.
     var current: ActivityStatusId { store.status }
 
+    /// Past days' modes as the server reads them, by `yyyy-MM-dd`. Today's is `store`.
+    private(set) var pastDays: [String: ActivityStatusId] = [:]
+
+    /// The mode of `day`, or today's when `day` is nil; nil while a past day is unread.
+    func status(on day: String?) -> ActivityStatusId? {
+        guard let day else { return store.status }
+        return pastDays[day]
+    }
+
     private let client: any ActivityStatusServing
     private let tokenProvider: () async throws -> String
     /// An in-flight read task; parallel callers wait on the first instead of firing redundant HTTP requests.
@@ -106,6 +115,41 @@ final class ActivityStatusStore {
         } catch {
             guard generation == writeGeneration else { return }
             store = confirmed
+            phase = .failed(Self.message(for: error, fallback: String(localized: "Ton statut n'a pas pu être enregistré.")))
+        }
+    }
+
+    /// Reads a past day's mode once.
+    func loadDay(_ day: String) async {
+        guard pastDays[day] == nil else { return }
+        do {
+            let token = try await tokenProvider()
+            for read in try await client.activityStatusDays(from: day, to: day, token: token) {
+                pastDays[read.day] = pastDays[read.day] ?? read.status
+            }
+        } catch is CancellationError {
+        } catch {
+            phase = .failed(Self.message(for: error, fallback: String(localized: "Ton statut n'a pas pu être chargé.")))
+        }
+    }
+
+    /// Sets a past day's mode after the fact. Today's mode is not touched: only today changes it.
+    func apply(status: ActivityStatusId, on day: String) async {
+        let previous = pastDays[day]
+        pastDays[day] = status
+        phase = .saving
+        writeGeneration += 1
+        let generation = writeGeneration
+        do {
+            let answer = try await SharpitRetry.run {
+                try await client.setActivityStatus(status, on: day, token: try await tokenProvider())
+            }
+            guard generation == writeGeneration else { return }
+            pastDays[answer.day] = answer.status
+            phase = .ready
+        } catch {
+            guard generation == writeGeneration else { return }
+            pastDays[day] = previous
             phase = .failed(Self.message(for: error, fallback: String(localized: "Ton statut n'a pas pu être enregistré.")))
         }
     }

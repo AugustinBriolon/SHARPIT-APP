@@ -1310,6 +1310,12 @@ private struct DemoActivityStatus: ActivityStatusServing {
     func setActivityStatus(_ write: V1ActivityStatusWrite, token: String) async throws -> V1ActivityStatusStore {
         V1ActivityStatusStore(status: write.status, retention: write.retention ?? .untilModified)
     }
+    func activityStatusDays(from: String, to: String, token: String) async throws -> [V1ActivityStatusDay] {
+        [V1ActivityStatusDay(day: from, status: .active)]
+    }
+    func setActivityStatus(_ status: ActivityStatusId, on day: String, token: String) async throws -> V1ActivityStatusDay {
+        V1ActivityStatusDay(day: day, status: status)
+    }
 }
 
 /// The status drawer opened at once on a mode with an end date.

@@ -208,6 +208,18 @@ private actor StubActivityStatusClient: ActivityStatusServing {
     }
 
     func recordedWrites() -> [V1ActivityStatusWrite] { writes }
+
+    private(set) var days: [String: ActivityStatusId] = [:]
+
+    func activityStatusDays(from: String, to _: String, token _: String) async throws -> [V1ActivityStatusDay] {
+        [V1ActivityStatusDay(day: from, status: days[from] ?? .active)]
+    }
+
+    func setActivityStatus(_ status: ActivityStatusId, on day: String, token _: String) async throws -> V1ActivityStatusDay {
+        if failsWrite { throw SharpitAPIError.server }
+        days[day] = status
+        return V1ActivityStatusDay(day: day, status: status)
+    }
 }
 
 @MainActor
@@ -262,6 +274,12 @@ private actor SlowFirstStatusClient: ActivityStatusServing {
         if write.status == slow { try await Task.sleep(for: .milliseconds(300)) }
         return V1ActivityStatusStore(status: write.status, retention: write.retention ?? .untilModified)
     }
+
+    func activityStatusDays(from: String, to _: String, token _: String) async throws -> [V1ActivityStatusDay] { [] }
+
+    func setActivityStatus(_ status: ActivityStatusId, on day: String, token _: String) async throws -> V1ActivityStatusDay {
+        V1ActivityStatusDay(day: day, status: status)
+    }
 }
 
 /// A date dialled in the picker sends a write per stop: the last pick is what stays on screen.
@@ -277,4 +295,43 @@ private actor SlowFirstStatusClient: ActivityStatusServing {
 
     #expect(store.current == .injured)
     #expect(store.phase == .ready)
+}
+
+// MARK: - Past days
+
+/// « Ce jour-là j'étais malade »: the past day keeps it, today's mode does not move.
+@MainActor
+@Test func aPastDaySetAfterTheFactLeavesTodayAlone() async {
+    let client = StubActivityStatusClient()
+    let store = ActivityStatusStore(client: client, tokenProvider: { "token" })
+    await store.load()
+
+    await store.loadDay("2026-11-20")
+    #expect(store.status(on: "2026-11-20") == .active)
+
+    await store.apply(status: .sick, on: "2026-11-20")
+    await store.apply(status: .active, retention: .untilModified)
+
+    #expect(store.status(on: "2026-11-20") == .sick)
+    #expect(store.status(on: nil) == .active)
+    #expect(await client.recordedWrites().map(\.status) == [.active])
+}
+
+@MainActor
+@Test func aRefusedPastDayWriteRestoresThatDay() async {
+    let store = ActivityStatusStore(client: StubActivityStatusClient(failsWrite: true), tokenProvider: { "token" })
+    await store.loadDay("2026-11-20")
+
+    await store.apply(status: .injured, on: "2026-11-20")
+
+    #expect(store.status(on: "2026-11-20") == .active)
+    #expect(store.phase == .failed("Ton statut n'a pas pu être enregistré."))
+}
+
+@Test func aPastDayWriteSendsTheDayAndTheMode() throws {
+    let data = try JSONEncoder().encode(V1ActivityStatusDay(day: "2026-11-20", status: .sick))
+    let body = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+
+    #expect(body["day"] as? String == "2026-11-20")
+    #expect(body["status"] as? String == "sick")
 }
