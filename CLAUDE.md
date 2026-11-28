@@ -442,7 +442,10 @@ remark at most, every figure true — never hype, emoji, praise for its own sake
 writes the pushes (`session-alerts.ts`, `athlete-notifications.ts`); the app its local reminders.
 
 Forbidden, on both platforms: streak counters, radial gauges dominating a hero, sparkle /
-chatbot chrome, colored glow shadows, invented metrics, motivational micro-copy.
+chatbot chrome, colored glow shadows, invented metrics, motivational micro-copy. One exception, the athlete's
+call (2026-11-28): the end of a guided strength session asks its effort on a dial
+(`GuidedEffortDial`) and its recap opens under a one-time fall of confetti (`GuidedConfetti`, off
+under Reduce Motion). Nowhere else.
 
 ## Related specs
 

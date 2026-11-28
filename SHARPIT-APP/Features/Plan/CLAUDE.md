@@ -315,13 +315,15 @@ draws one figure a day, chosen for the exercise (`ExerciseProgressionReadout.mea
 estimated one-rep max for a loaded exercise (Epley, load × (1 + reps / 30), the day's best set), so
 a day of 80 kg × 3 reads below a day of 70 kg × 12 — the best load alone drew noise; the best set's
 repetitions for an exercise never loaded; the longest hold for a hold. « Séances » lists the days'
-sets under the curve. Ending a session asks « Comment s'est passée la séance ? » on two
-`CliniqueScale` tracks, effort perçu with what the level means in repetitions left
-(`GuidedStrengthReadout.effortMeaning`) and ressenti — as the activity's own sheet does — with
+sets under the curve. Ending a session asks « Comment s'est passée la séance ? »: the effort on a dial
+(`GuidedEffortDial`: 270°, cool to warm, the level big in its centre, a notch per step under the
+finger), its word and what the level means in repetitions left
+(`GuidedStrengthReadout.effortMeaning`), then ressenti on a `CliniqueScale` track, with
 « Enregistrer la séance » docked. Saved, the session shows its recap (`GuidedStrengthRecap`): the
 « Séance enregistrée » seal arriving once, the name and when, duration / sets / reps / volume /
 effort two a row between hairlines, each exercise with its sets folded (« 3 × 8 · 20 kg »), and
 « Voir l'activité » (closes, then `ShellRouter.openActivity`) beside « Terminé ». The screen behind
-is told (its toast, its refresh) only when the recap closes. The inspiration's radial gauge and
-confetti are not built: the root rules forbid a radial gauge as a hero and animate meaning only.
+is told (its toast, its refresh) only when the recap closes. The recap opens under a
+one-time fall of confetti (`GuidedConfetti`, 3 s, none under Reduce Motion). The dial and the
+confetti are the athlete's exception to the root rules (2026-11-28).
 

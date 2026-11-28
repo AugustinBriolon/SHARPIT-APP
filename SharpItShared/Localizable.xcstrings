@@ -58825,6 +58825,22 @@
           }
         }
       }
+    },
+    "Tourne la jauge" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn the dial"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tourne la jauge"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

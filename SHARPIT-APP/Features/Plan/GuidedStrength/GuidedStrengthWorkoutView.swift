@@ -797,34 +797,39 @@ struct GuidedStrengthWorkoutView: View {
         return false
     }
 
-    /// « Comment s’est passée la séance ? »: the effort on the app's scale, what that level means,
-    /// the feeling, then the save docked. One question a page, nothing else around it.
+    /// « Comment s'est passée la séance ? »: the effort on a dial (`GuidedEffortDial`, the athlete's
+    /// call), its word and what that level means, the feeling, then the save docked.
     private var summaryPage: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
                 Text("Comment s'est passée la séance ?")
-                    .font(SharpitTypography.system(size: 28, weight: .semibold, relativeTo: .title))
+                    .font(SharpitTypography.system(size: 26, weight: .semibold, relativeTo: .title))
                     .tracking(-0.5)
                     .foregroundStyle(SharpitColor.foreground)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityAddTraits(.isHeader)
 
-                VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                    CliniqueScale(
-                        title: String(localized: "Effort perçu"),
-                        values: Array(1...10),
-                        selection: rpe,
-                        word: SessionEffortReadout.word,
-                        ends: (String(localized: "Très facile"), String(localized: "Maximal"))
-                    ) { rpe = $0 }
-                    // Reserved height: choosing a level never moves what is under it.
+                GuidedEffortDial(value: $rpe)
+                    .frame(maxWidth: 320)
+                    .frame(maxWidth: .infinity)
+
+                // The level's word and what it means; height reserved so a turn never moves the page.
+                VStack(spacing: SharpitSpacing.xs) {
+                    Text(rpe.flatMap(SessionEffortReadout.word) ?? String(localized: "Tourne la jauge"))
+                        .font(SharpitTypography.system(size: 28, weight: .semibold, relativeTo: .title))
+                        .foregroundStyle(rpe == nil ? SharpitColor.slate : SharpitColor.foreground)
                     Text(GuidedStrengthReadout.effortMeaning(rpe) ?? " ")
-                        .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                        .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
                         .foregroundStyle(SharpitColor.slate)
+                        .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: .infinity, minHeight: 40, alignment: .topLeading)
-                        .accessibilityHidden(rpe == nil)
+                        .frame(minHeight: 44, alignment: .top)
                 }
+                .frame(maxWidth: .infinity)
+
+                CliniqueDivider()
 
                 feelingPicker
 
@@ -940,6 +945,11 @@ struct GuidedStrengthWorkoutView: View {
             }
             .padding(.horizontal, 24)
             .padding(.vertical, SharpitSpacing.lg)
+        }
+        // A session saved is the win: paper falls over its recap, once (the athlete's call).
+        .overlay(alignment: .top) {
+            GuidedConfetti()
+                .ignoresSafeArea()
         }
         .safeAreaInset(edge: .bottom) {
             SharpitBareActions {
@@ -1261,8 +1271,7 @@ struct GuidedStrengthWorkoutView: View {
     }
 }
 
-/// « Séance enregistrée »: the recap's seal, arriving once with the page — the session is the win,
-/// the seal says it is kept. No confetti: the app animates meaning only.
+/// « Séance enregistrée »: the recap's seal, arriving once with the page, under the confetti.
 private struct GuidedSessionSavedSeal: View {
     @State private var shown = false
 
