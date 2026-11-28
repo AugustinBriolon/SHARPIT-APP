@@ -51,7 +51,61 @@ enum ExerciseMediaCatalog {
                 return id
             }
         }
-        return nil
+        return closestCatalogId(key)
+    }
+
+    /// Words of a French name that say nothing about the movement: « Abdos jackknife (poids du
+    /// corps) » is the jackknife sit-up whatever its load.
+    private static let fillerWords: Set<String> = [
+        "a", "au", "aux", "avec", "d", "de", "des", "du", "en", "et", "l", "la", "le", "les", "sans",
+        "sur", "pour", "poids", "corps", "charge", "leger", "legere", "lourd", "lourde",
+        "poids du corps", "a vide",
+    ]
+
+    private static var closestCache: [String: String?] = [:]
+
+    /// The catalog's exercise a coach's name means when no alias spells it (the coach writes
+    /// French, the catalog English): every word read through `ExerciseFrenchGlossary`, the name
+    /// holding the most of them kept when it covers at least 60 % of both — the web resolver's
+    /// threshold. Most of the coach's names had no picture before (the athlete's remark, 2026-11-28).
+    static func closestCatalogId(_ key: String) -> String? {
+        if let cached = closestCache[key] { return cached }
+        let units = ExerciseFrenchGlossary.alternatives(for: key).filter { !fillerWords.contains($0[0]) }
+        var best: (id: String, score: Double, length: Int, rank: Int, name: String)?
+        if !units.isEmpty {
+            for source in [index.aliases, index.names] {
+                for (name, id) in source where index.media[id] != nil {
+                    let padded = " \(name) "
+                    // Each unit found counts once, and so does each word of the name left over:
+                    // « pull up » is one unit for « traction », not two words of which one is missed.
+                    // `rank`: how far down each unit's spellings the name was found, so « traction »
+                    // takes the glossary's first meaning (« pull up ») over its second.
+                    var hits = 0
+                    var covered = 0
+                    var rank = 0
+                    for spellings in units {
+                        let found = spellings.enumerated().filter { padded.contains(" \($0.element) ") }
+                        guard let first = found.first,
+                              let longest = found.map({ $0.element.split(separator: " ").count }).max()
+                        else { continue }
+                        hits += 1
+                        covered += longest
+                        rank += first.offset
+                    }
+                    guard hits > 0 else { continue }
+                    let words = name.split(separator: " ").count
+                    let length = hits + max(words - covered, 0)
+                    let score = Double(hits) / Double(max(units.count, length))
+                    let better = best.map {
+                        score > $0.score || (score == $0.score && (length, rank, name) < ($0.length, $0.rank, $0.name))
+                    } ?? true
+                    if better { best = (id, score, length, rank, name) }
+                }
+            }
+        }
+        let found = best.flatMap { $0.score >= 0.6 ? $0.id : nil }
+        closestCache[key] = .some(found)
+        return found
     }
 
     static func gifURL(catalogId: String? = nil, name: String? = nil) -> URL? {

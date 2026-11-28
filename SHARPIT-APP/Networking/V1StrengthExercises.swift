@@ -156,8 +156,18 @@ final class StrengthLibraryStore {
     }
 
     /// The days one exercise was done, oldest first; a failure is thrown for the page to say.
+    ///
+    /// The server reads the days under the name exactly as folded on its side, which keeps
+    /// punctuation: « Traction (lestée) » and « Traction lestée » are two exercises there and one
+    /// here. The page showed nothing for an exercise whose « Dernière fois » it had just shown
+    /// (the athlete's remark, 2026-11-28), so it asks under every name the history gathers here.
     func progression(of name: String, tokenProvider: () async throws -> String) async throws -> [V1ExerciseSession] {
-        try await client.progression(name: name, token: try await tokenProvider())
+        let token = try await tokenProvider()
+        var sessions: [V1ExerciseSession] = []
+        for spelling in StrengthProgressionMerge.spellings(of: name, in: exercises) {
+            sessions += try await client.progression(name: spelling, token: token)
+        }
+        return StrengthProgressionMerge.merged(sessions)
     }
 
     /// Saves the note, then keeps it here so the page shows it at once; a failure is thrown.
@@ -169,6 +179,47 @@ final class StrengthLibraryStore {
         if let index = exercises.firstIndex(where: { $0.id == key }) {
             exercises[index].athleteNote = athleteNotes[key]
         }
+    }
+}
+
+/// One exercise's days read under each of its spellings, folded back into one list.
+enum StrengthProgressionMerge {
+    /// The name asked first, then every other name the athlete logged that folds to the same key.
+    static func spellings(of name: String, in library: [V1StrengthExercise]) -> [String] {
+        let key = StrengthExerciseKey.of(name)
+        var seen = Set([serverKey(name)])
+        var names = [name]
+        for exercise in library where exercise.id == key && seen.insert(serverKey(exercise.name)).inserted {
+            names.append(exercise.name)
+        }
+        return names
+    }
+
+    /// The server's `exerciseKey`: accents and case folded, spaces collapsed, punctuation kept.
+    static func serverKey(_ name: String) -> String {
+        name.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: Locale(identifier: "en_US_POSIX"))
+            .lowercased()
+            .split(whereSeparator: \.isWhitespace)
+            .joined(separator: " ")
+    }
+
+    /// One session a day, oldest first: the blocks side by side, the best kept, the volume added.
+    static func merged(_ sessions: [V1ExerciseSession]) -> [V1ExerciseSession] {
+        var byDay: [String: V1ExerciseSession] = [:]
+        for session in sessions {
+            guard let kept = byDay[session.date] else {
+                byDay[session.date] = session
+                continue
+            }
+            byDay[session.date] = V1ExerciseSession(
+                date: session.date,
+                blocks: kept.blocks + session.blocks,
+                bestWeightKg: [kept.bestWeightKg, session.bestWeightKg].compactMap { $0 }.max(),
+                bestDurationSec: [kept.bestDurationSec, session.bestDurationSec].compactMap { $0 }.max(),
+                volumeKg: kept.volumeKg + session.volumeKg
+            )
+        }
+        return byDay.values.sorted { $0.date < $1.date }
     }
 }
 
@@ -199,6 +250,13 @@ enum StrengthHistoryReadout {
             return PlannedSessionFormat.durationSeconds(seconds)
         }
         return nil
+    }
+
+    /// « Dernière fois 4 × 8 », the sets without their load: what a list of exercises says beside
+    /// each one. The load belongs to the exercise's own sheet (the athlete's call, 2026-11-28).
+    static func lastSets(_ exercise: V1StrengthExercise) -> String {
+        let block = block(sets: exercise.last.sets, reps: exercise.last.reps, weightKg: nil, durationSec: exercise.last.durationSec)
+        return String(localized: "Dernière fois \(block)")
     }
 
     static func line(_ exercise: V1StrengthExercise) -> String {

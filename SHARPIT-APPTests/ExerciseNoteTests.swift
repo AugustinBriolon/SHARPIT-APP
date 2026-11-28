@@ -69,6 +69,6 @@ private func exercise(_ name: String, athleteNote: String? = nil) -> V1StrengthE
 }
 
 @Test func thePickerShowsTheAthletesNoteUnderTheHistory() {
-    #expect(ExercisePickerReadout.detail(exercise("Squat", athleteNote: "Talons au sol")) == "Dernière fois 4 × 8 · 60 kg\nTalons au sol")
-    #expect(ExercisePickerReadout.detail(exercise("Squat")) == "Dernière fois 4 × 8 · 60 kg")
+    #expect(ExercisePickerReadout.detail(exercise("Squat", athleteNote: "Talons au sol")) == "Dernière fois 4 × 8\nTalons au sol")
+    #expect(ExercisePickerReadout.detail(exercise("Squat")) == "Dernière fois 4 × 8")
 }

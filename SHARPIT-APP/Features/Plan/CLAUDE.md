@@ -100,14 +100,14 @@ asked before replacing unless the day moved. Pro-only: a Free athlete's tap open
 **Guided strength session.** « Lancer la séance » closes the drawer and hands the session to
 `GuidedWorkoutDock` (`RootView`'s, in the environment; `docs/adr/0030`): the same
 `GuidedStrengthWorkoutView` is mounted over the tabs (`GuidedWorkoutDockHost`) and « Réduire la séance »
-(a ⌄ at the top left, and on every pushed page; « Terminer la séance » and « Quitter » sit in the « … » at the right) only slides it away — sets, rest, clock and heart rate keep running — while the tab
+(a ⌄ at the top left, and on every pushed page; « Terminer la séance » and « Abandonner » sit in the « … » at the right) only slides it away — sets, rest, clock and heart rate keep running — while the tab
 bar's bottom accessory (« Push day · 12:34 », a glass capsule before iOS 26.1) brings it back. One
 session at a time: a second launch reopens the running one. The summary offers « Reprendre la séance ».
 A hold set has a ▶ that pushes `GuidedHoldPage` (`GuidedHoldClock`): « Mets-toi en place » (5 s), then
 the hold, or for a `perSide` set « Côté gauche », « Change de côté » (5 s), « Côté droit » (one set covers
 both sides), the whole sequence shown from the start and the next step always named; a sound on each
 step and its last 3 s, VoiceOver told, screen kept awake; ticked at the end. Set lines say
-« par côté » and never show a 0 kg load; the server shapes the sets (SHARPIT ADR-121: no load on
+« /côté » after the unit and never show a 0 kg load; the server shapes the sets (SHARPIT ADR-121: no load on
 mobility, a one-rep stretch becomes a 30 s hold, `perSide` from the coach or the taxonomy).
 `SharpitScreenDemo strength` shows it in a two-tab shell, dock included.
 
@@ -274,3 +274,34 @@ phrases with their English names, phrases before words, plurals as their singula
 finds « push up » and « curl haltère incliné » the incline dumbbell curls. The names listed stay the
 dataset's. A French word the glossary lacks finds nothing: add it there. Exercise thumbnails are
 dimmed in dark mode, as Matériel's tiles.
+
+**Exercises as cards, a sheet per exercise (the athlete's call, 2026-11-28; supersedes the set in
+hand's card of « Bilan, générateur, renfo » and « Guided session, exercises and history »).** The
+session's page lists each exercise as a bordered card holding its sets: its picture (or the strength
+glyph), its name and « 1 sur 3 séries » (`GuidedStrengthReadout.setsLine`) with a chevron, a « … »
+(the sheet, « Compter en durée / en répétitions » for the sets still to do, « Retirer la dernière
+série »), then each set as a line — its number in a ring, « 12 rép. » and « 10 kg » each in a hairline
+capsule typed in place (« 45 s » and a ▶ for a hold, « /côté » for a set covering both sides), the
+tick — and at its foot « Progression » (an exercise already logged) and « Ajouter une série ». No
+stepper card, no « Valider la série », no per-exercise page to type the sets on. The name opens
+`ExerciseGuidePage`: « Guide » — the catalog's GIF, « Voir l'exécution sur YouTube » (a search for
+« <name> technique », `ExerciseGuideReadout`), the figures strip (last time, best, today's volume:
+the load lives here), « Consigne du coach », « Note épinglée » (the standing note, ADR-146) — and
+« Historique » (`ExerciseProgressionContent`, also the body of `ExerciseProgressionPage`). The catalog
+carries no written instructions, so the sheet has none. A list of exercises (the picker) says
+« Dernière fois 3 × 8 » without the load (`StrengthHistoryReadout.lastSets`). The « … » ends on
+« Abandonner », one word with its glyph drawn red (a menu renders a template image in its own tint).
+
+**Progression under every spelling (2026-11-28).** The server reads an exercise's days under its name
+folded its own way (`exerciseKey`: accents, case and spaces, punctuation kept), the app under
+`normalize` (punctuation too): « Traction (lestée) » showed « Dernière fois » and an empty progression.
+`StrengthLibraryStore.progression` asks under every name of the library that folds to the same key
+here and merges the days (`StrengthProgressionMerge`). Aligning `exerciseKey` with `normalize` on the
+server would make it one request.
+
+**More exercises get their picture (2026-11-28).** An exercise whose name no alias spells is matched
+to the catalog by its words (`ExerciseMediaCatalog.closestCatalogId`): each read through the glossary,
+filler words dropped (« poids du corps », « de »…), an English phrase counted as one unit, the name
+covering at least 60 % of both kept — the web resolver's threshold. « Abdos jackknife » finds the
+jackknife sit-up, « Pont fessier » the glute bridge. The coach still writes free names: making the
+generator name exercises from the catalog is a server task.

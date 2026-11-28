@@ -447,6 +447,17 @@ nonisolated enum GuidedStrengthReadout {
             : (String(localized: "En cours"), .watch)
     }
 
+    /// Under an exercise's name on its card: « 3 séries », then « 1 sur 3 séries » once one is
+    /// done, « 3 séries faites » at the end.
+    static func setsLine(done: Int, total: Int) -> String {
+        let noun = total == 1 ? String(localized: "série") : String(localized: "séries")
+        if total > 0, done >= total {
+            return total == 1 ? String(localized: "1 série faite") : String(localized: "\(total) séries faites")
+        }
+        if done > 0 { return String(localized: "\(done) sur \(total) \(noun)") }
+        return "\(total) \(noun)"
+    }
+
     /// What the overview's button says: nothing to end before a first set, the session to end
     /// when it is run live, the exercises to hand back when it is logged by hand.
     static func finishTitle(done: Int, isLogging: Bool) -> String {

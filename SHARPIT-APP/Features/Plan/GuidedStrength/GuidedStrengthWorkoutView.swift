@@ -1,6 +1,7 @@
 import AudioToolbox
 import StoreKit
 import SwiftUI
+import UIKit
 
 /// Creates the logged STRENGTH activity and links it back to the planned session.
 struct GuidedStrengthFinishContext {
@@ -109,7 +110,7 @@ struct GuidedStrengthWorkoutView: View {
             .navigationDestination(for: Route.self) { route in
                 Group {
                     switch route {
-                    case let .exercise(name): exercisePage(name: name)
+                    case let .exercise(name): exerciseGuide(name: name)
                     case .rest: restPage
                     case let .hold(id): holdPage(id: id)
                     case let .progression(name):
@@ -217,9 +218,17 @@ struct GuidedStrengthWorkoutView: View {
                 .disabled(session.completedCount == 0)
             }
             Section("Les séries cochées ne seront pas enregistrées") {
-                Button("Quitter sans enregistrer", systemImage: "xmark.circle", role: .destructive) {
+                // One word, so the line never wraps; the section says what is lost. The glyph is
+                // drawn red itself: a menu renders a template image in its own tint.
+                Button(role: .destructive) {
                     stopTimers()
                     close()
+                } label: {
+                    Label {
+                        Text("Abandonner")
+                    } icon: {
+                        Image(uiImage: Self.abandonGlyph)
+                    }
                 }
             }
         } label: {
@@ -228,6 +237,11 @@ struct GuidedStrengthWorkoutView: View {
         .disabled(isSaving)
         .accessibilityLabel("Plus d'actions")
     }
+
+    private static let abandonGlyph: UIImage = {
+        let symbol = UIImage(systemName: "xmark.circle") ?? UIImage()
+        return symbol.withTintColor(UIColor(SharpitColor.destructive), renderingMode: .alwaysOriginal)
+    }()
 
     private var sessionStatus: some View {
         HStack(spacing: SharpitSpacing.sm) {
@@ -330,12 +344,11 @@ struct GuidedStrengthWorkoutView: View {
                         .accessibilityAddTraits(.isHeader)
                 }
 
-                VStack(spacing: 0) {
+                // Each exercise a card holding its sets, done in place; its name opens its sheet.
+                VStack(spacing: SharpitSpacing.sm) {
                     ForEach(Array(session.exerciseGroups.enumerated()), id: \.element.id) { offset, group in
-                        CliniqueDivider()
-                        overviewExerciseRow(group: group, order: offset + 1)
+                        exerciseCard(group: group, order: offset + 1)
                     }
-                    if !session.targets.isEmpty { CliniqueDivider() }
                 }
 
                 // Outside the plan if need be: what was done on top is better noted than left out.
@@ -366,59 +379,129 @@ struct GuidedStrengthWorkoutView: View {
                 .buttonStyle(CliniqueButtonStyle(kind: .primary, isLarge: true))
                 .disabled(session.completedCount == 0)
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal, SharpitSpacing.pageInset)
             .padding(.vertical, SharpitSpacing.md)
+        }
+        .scrollDismissesKeyboard(.interactively)
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("OK") { focusedField = nil }
+            }
         }
     }
 
-    private func overviewExerciseRow(group: GuidedStrengthExerciseGroup, order: Int) -> some View {
+    /// An exercise as the session shows it: its picture and name (opening its sheet), how many
+    /// sets and where it stands, then the sets themselves, typed and ticked in place, and at its
+    /// foot « Progression » and « Ajouter une série » (the athlete's call, 2026-11-28).
+    private func exerciseCard(group: GuidedStrengthExerciseGroup, order: Int) -> some View {
         let done = group.doneCount(in: session.targets)
         let total = group.indices.count
-        let volume = group.volumeKg(in: session.targets)
-        return NavigationLink(value: Route.exercise(group.name)) {
+        let setIds = group.indices.map { session.targets[$0].id }
+        let usesDuration = group.indices.first.map { session.targets[$0].usesDuration } ?? false
+        let hasHistory = tokenProvider != nil && StrengthLibraryStore.shared.history(of: group.name) != nil
+        return VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: SharpitSpacing.sm) {
-                if let thumb = ExerciseMediaCatalog.thumbURL(
-                    catalogId: group.exerciseCatalogId,
-                    name: group.name
-                ) {
-                    GuidedExerciseThumbView(url: thumb, size: SharpitTokens.chipSize)
-                } else {
-                    SharpitNumberChip(number: order)
+                NavigationLink(value: Route.exercise(group.name)) {
+                    HStack(spacing: SharpitSpacing.sm) {
+                        GuidedExerciseThumbView(
+                            url: ExerciseMediaCatalog.thumbURL(catalogId: group.exerciseCatalogId, name: group.name),
+                            size: 48
+                        )
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(group.name)
+                                .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body))
+                                .foregroundStyle(SharpitColor.foreground)
+                                .multilineTextAlignment(.leading)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Text(GuidedStrengthReadout.setsLine(done: done, total: total))
+                                .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline, digits: true))
+                                .foregroundStyle(SharpitColor.slate)
+                        }
+                        Spacer(minLength: 0)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(SharpitColor.slate)
+                            .accessibilityHidden(true)
+                    }
+                    .contentShape(.rect)
                 }
+                .buttonStyle(.sharpitPressable)
+                .accessibilityLabel("\(group.name), exercice \(order), \(GuidedStrengthReadout.setsLine(done: done, total: total))")
+                .accessibilityHint("Ouvre la fiche de l’exercice")
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(group.name)
-                        .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body))
-                        .foregroundStyle(SharpitColor.foreground)
-                        .multilineTextAlignment(.leading)
-                    // One mark per set, filled as they are done: where the exercise stands, seen
-                    // rather than counted.
-                    HStack(spacing: 4) {
-                        ForEach(0..<total, id: \.self) { index in
-                            Capsule()
-                                .fill(index < done ? SharpitColor.foreground : SharpitColor.divider)
-                                .frame(width: 18, height: 5)
+                Menu {
+                    Button("Voir la fiche", systemImage: "doc.text") {
+                        focusedField = nil
+                        path.append(.exercise(group.name))
+                    }
+                    Button(
+                        usesDuration ? String(localized: "Compter en répétitions") : String(localized: "Compter en durée"),
+                        systemImage: usesDuration ? "number" : "timer"
+                    ) {
+                        focusedField = nil
+                        // The sets still to do: a set done keeps what was logged.
+                        let open = session.targets.filter { setIds.contains($0.id) && !$0.isDone }.map(\.id)
+                        for id in open {
+                            session.setUsesDuration(id: id, !usesDuration)
                         }
                     }
-                    .padding(.top, 3)
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel("\(done) séries sur \(total)")
+                    if let last = setIds.last, session.canRemoveSet(id: last) {
+                        Button("Retirer la dernière série", systemImage: "minus.circle", role: .destructive) {
+                            SharpitMotion.run { session.removeSet(id: last) }
+                        }
+                    }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(SharpitColor.foreground)
+                        .frame(width: 36, height: 36)
+                        .background(Circle().fill(SharpitColor.tile))
+                        .frame(width: 44, height: 44)
+                        .contentShape(Circle())
                 }
+                .accessibilityLabel("Actions sur \(group.name)")
+            }
 
-                Spacer(minLength: SharpitSpacing.xs)
-
-                if let standing = GuidedStrengthReadout.standing(done: done, total: total) {
-                    CliniqueStatusPill(standing.label, status: standing.status)
-                }
-                if volume > 0 {
-                    volumeFigure(volume)
+            VStack(spacing: 0) {
+                ForEach(setIds, id: \.self) { id in
+                    setRow(id: id)
                 }
             }
-            .padding(.vertical, 12)
-            .frame(maxWidth: .infinity, minHeight: SharpitSpacing.rowHeight, alignment: .leading)
-            .contentShape(.rect)
+            .padding(.top, SharpitSpacing.xs)
+
+            CliniqueDivider()
+                .padding(.top, SharpitSpacing.xs)
+            HStack(spacing: 0) {
+                if hasHistory {
+                    Button {
+                        focusedField = nil
+                        path.append(.progression(group.name))
+                    } label: {
+                        Label("Progression", systemImage: "chart.line.uptrend.xyaxis")
+                            .frame(maxWidth: .infinity, minHeight: 44)
+                            .contentShape(.rect)
+                    }
+                    .buttonStyle(.sharpitPressable)
+                    Rectangle()
+                        .fill(SharpitColor.divider)
+                        .frame(width: 1, height: 22)
+                        .accessibilityHidden(true)
+                }
+                Button {
+                    SharpitMotion.run { session.addSet(toExercise: group.name) }
+                } label: {
+                    Label("Ajouter une série", systemImage: "plus")
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .contentShape(.rect)
+                }
+                .buttonStyle(.sharpitPressable)
+            }
+            .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+            .foregroundStyle(SharpitColor.foreground)
+            .padding(.bottom, -SharpitSpacing.xs)
         }
-        .buttonStyle(.sharpitPressable)
+        .cliniqueCard()
     }
 
     /// Trailing volume, width reserved for the widest figure so 3–5 digits never move the row.
@@ -435,314 +518,56 @@ struct GuidedStrengthWorkoutView: View {
         .accessibilityLabel(volume > 0 ? "\(GuidedStrengthSetTarget.volumeFigure(volume)) kilogrammes" : String(localized: "Aucun volume"))
     }
 
-    // MARK: - Exercise card (image 1)
+    // MARK: - Exercise sheet
 
-    private func exercisePage(name: String) -> some View {
+    private func exerciseGuide(name: String) -> some View {
         let group = session.exerciseGroups.first { $0.name == name }
         let volume = group?.volumeKg(in: session.targets) ?? 0
-        let sets = group?.indices.map { session.targets[$0] } ?? []
-        let gifURL = ExerciseMediaCatalog.gifURL(
+        let position = session.exerciseGroups.firstIndex { $0.name == name }
+            .map { String(localized: "Exercice \($0 + 1) sur \(session.exerciseGroups.count)") }
+        return ExerciseGuidePage(
+            name: name,
             catalogId: group?.exerciseCatalogId,
-            name: name
-        )
-        let nextSet = session.nextSet(ofExercise: name)
-        // List (not ScrollView) so trailing swipeActions can reveal trash.
-        return List {
-            Section {
-                VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                    if let gifURL {
-                        GuidedExerciseMediaView(url: gifURL, height: 188)
-                        Text(ExerciseMediaCatalog.attribution)
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.slate)
-                    }
-
-                    VStack(alignment: .leading, spacing: 6) {
-                        if let position = session.exerciseGroups.firstIndex(where: { $0.name == name }) {
-                            Text("Exercice \(position + 1) sur \(session.exerciseGroups.count)")
-                                .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout, digits: true))
-                                .foregroundStyle(SharpitColor.slate)
-                        }
-                        Text(name)
-                            .font(SharpitTypography.system(size: 28, weight: .semibold, relativeTo: .title))
-                            .tracking(-0.5)
-                            .foregroundStyle(SharpitColor.foreground)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .accessibilityAddTraits(.isHeader)
-                        if let notes = group?.notes, !notes.isEmpty {
-                            Text(notes)
-                                .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
-                                .foregroundStyle(SharpitColor.slate)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        if tokenProvider != nil {
-                            athleteNoteLine(name: name)
-                        }
-                        // What was last done, the best, and today's volume: one strip, there from the
-                        // start. The volume used to appear with the first set done and push the sets down.
-                        ExerciseFiguresStrip(
-                            history: StrengthLibraryStore.shared.history(of: name),
-                            volume: volume > 0 ? "\(GuidedStrengthSetTarget.volumeFigure(volume)) kg" : nil
-                        )
-                        .padding(.top, SharpitSpacing.xs)
-                        if tokenProvider != nil, StrengthLibraryStore.shared.history(of: name) != nil {
-                            progressionLink(name: name)
-                        }
-                    }
-                }
-                .listRowInsets(EdgeInsets(top: SharpitSpacing.sm, leading: 24, bottom: SharpitSpacing.sm, trailing: 24))
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
-            }
-
-            Section {
-                ForEach(sets) { set in
-                    Group {
-                        if set.id == nextSet?.id {
-                            currentSetCard(set)
-                                .padding(.vertical, SharpitSpacing.xs)
-                                .padding(.trailing, 8)
-                                .listRowSeparator(.hidden)
-                        } else {
-                            setRow(id: set.id)
-                        }
-                    }
-                        .listRowInsets(EdgeInsets(top: 0, leading: 24, bottom: 0, trailing: 16))
-                        .listRowBackground(Color.clear)
-                        .listRowSeparatorTint(SharpitColor.divider)
-                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                if session.canRemoveSet(id: set.id) {
-                                    SharpitSwipeDeleteButton {
-                                        session.removeSet(id: set.id)
-                                    }
-                                }
-                            }
-                }
-
-                SharpitDashedAddButton(title: String(localized: "Ajouter une série")) {
-                    session.addSet(toExercise: name)
-                }
-                .listRowInsets(EdgeInsets(top: SharpitSpacing.sm, leading: 24, bottom: SharpitSpacing.pageInset, trailing: 24))
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
-            }
-        }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
-        .scrollDismissesKeyboard(.interactively)
-        .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button("OK") { focusedField = nil }
-            }
-        }
-    }
-
-    /// « Voir la progression »: every day the exercise was done, pushed over its page.
-    private func progressionLink(name: String) -> some View {
-        NavigationLink(value: Route.progression(name)) {
-            HStack(spacing: SharpitSpacing.xs) {
-                Image(systemName: "chart.line.uptrend.xyaxis")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(SharpitColor.slate)
-                    .accessibilityHidden(true)
-                Text("Voir la progression")
-                    .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                    .foregroundStyle(SharpitColor.foreground)
-                Spacer(minLength: 0)
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(SharpitColor.slate)
-                    .accessibilityHidden(true)
-            }
-            .frame(maxWidth: .infinity, minHeight: 40, alignment: .leading)
-            .contentShape(.rect)
-        }
-        .buttonStyle(.sharpitPressable)
-    }
-
-    /// « Ma note »: the standing note the athlete keeps on this exercise, or the way to write one.
-    private func athleteNoteLine(name: String) -> some View {
-        let note = StrengthLibraryStore.shared.athleteNote(of: name)
-        return Button { noteTarget = ExerciseNoteTarget(name: name) } label: {
-            HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
-                Image(systemName: note == nil ? "plus" : "pencil")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(SharpitColor.slate)
-                    .accessibilityHidden(true)
-                Text(note ?? String(localized: "Ajouter une note"))
-                    .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                    .foregroundStyle(note == nil ? SharpitColor.slate : SharpitColor.foreground)
-                    .multilineTextAlignment(.leading)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .frame(maxWidth: .infinity, minHeight: 32, alignment: .leading)
-            .contentShape(.rect)
-        }
-        .buttonStyle(.sharpitPressable)
-        .accessibilityLabel(note.map { String(localized: "Ma note : \($0)") } ?? String(localized: "Ajouter une note"))
-    }
-
-    /// The set being done, as the mock-up's ink-lined card: its number, then the repetitions and
-    /// the load each stepped in place. « Durée » turns it into a hold, as the row's « kg » does.
-    private func currentSetCard(_ set: GuidedStrengthSetTarget) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("Série \(set.setNumber)")
-                    .font(SharpitTypography.system(size: 18, weight: .semibold, relativeTo: .headline, digits: true))
-                    .foregroundStyle(SharpitColor.foreground)
-                sideTag(set)
-                Spacer(minLength: SharpitSpacing.xs)
-                Button("Durée") {
-                    session.setUsesDuration(id: set.id, true)
-                    focusedField = nil
-                }
-                .buttonStyle(.plain)
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.slate)
-                .underline(pattern: .dot)
-                .accessibilityLabel("Passer en durée")
-            }
-            HStack(alignment: .top, spacing: SharpitSpacing.sm) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Répétitions")
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.slate)
-                    JournalStepper(
-                        value: "\(set.loggedReps)",
-                        label: String(localized: "Répétitions"),
-                        onLess: { session.stepReps(id: set.id, by: -1) },
-                        onMore: { session.stepReps(id: set.id, by: 1) }
-                    )
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Charge")
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.slate)
-                    JournalStepper(
-                        value: set.loggedWeightKg.map(GuidedStrengthSetTarget.kilograms) ?? "—",
-                        label: String(localized: "Charge en kilogrammes"),
-                        onLess: { session.stepWeight(id: set.id, by: -Self.plateStepKg) },
-                        onMore: { session.stepWeight(id: set.id, by: Self.plateStepKg) }
-                    )
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            // Validated where it is set: the card is the set in hand, its button with it.
-            Button {
-                focusedField = nil
-                completeSet(id: set.id)
-            } label: {
-                Label("Valider la série", systemImage: "checkmark").frame(maxWidth: .infinity)
-            }
-            .buttonStyle(CliniqueButtonStyle(kind: .primary, isLarge: true))
-        }
-        .padding(SharpitSpacing.md)
-        .overlay(
-            RoundedRectangle(cornerRadius: SharpitTokens.cardShapeRadius, style: .continuous)
-                .strokeBorder(SharpitColor.foreground, lineWidth: 1.5)
+            position: position,
+            coachNotes: group?.notes,
+            volume: volume > 0 ? "\(GuidedStrengthSetTarget.volumeFigure(volume)) kg" : nil,
+            tokenProvider: tokenProvider,
+            onEditNote: { noteTarget = ExerciseNoteTarget(name: name) }
         )
     }
 
-    /// The smallest pair of plates most bars take.
-    private static var plateStepKg: Double { 2.5 }
-
+    /// One set on its exercise's card: its number, then each figure in its own field with its unit
+    /// written in — « 12 rép. », « 10 kg », or « 45 s » for a hold — and the tick. A hold has its ▶,
+    /// which counts it down on its own page.
     @ViewBuilder
     private func setRow(id: UUID) -> some View {
         if let set = session.targets.first(where: { $0.id == id }) {
-            HStack(spacing: SharpitSpacing.sm) {
-                Text("Série \(set.setNumber)")
-                    .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout, digits: true))
-                    .foregroundStyle(SharpitColor.slate)
-                    .fixedSize()
-                    .frame(minWidth: 64, alignment: .leading)
+            HStack(spacing: SharpitSpacing.xs) {
+                Text("\(set.setNumber)")
+                    .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .body, digits: true))
+                    .foregroundStyle(set.isDone ? SharpitColor.slate : SharpitColor.foreground)
+                    .frame(width: 32, height: 32)
+                    .overlay(Circle().strokeBorder(SharpitColor.outline, lineWidth: 1))
+                    .accessibilityLabel("Série \(set.setNumber)")
 
                 if set.isHold {
-                    TextField("0", text: durationText(for: set.id))
-                        .keyboardType(.numberPad)
-                        .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body, digits: true))
-                        .foregroundStyle(SharpitColor.foreground)
-                        .focused($focusedField, equals: .duration(set.id))
-                        .frame(minWidth: 44, maxWidth: 72, alignment: .leading)
-                        .accessibilityLabel(set.durationUsesMinutes ? String(localized: "Durée en minutes") : String(localized: "Durée en secondes"))
-                    Button {
-                        session.setUsesDuration(id: set.id, false)
-                        focusedField = nil
-                    } label: {
-                        Text(set.durationUsesMinutes ? "min" : "s")
-                            .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                            .foregroundStyle(SharpitColor.slate)
-                            .underline(pattern: .dot)
-                            .padding(.horizontal, 4)
-                            .padding(.vertical, 2)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Passer en kilos")
-                    .accessibilityHint("Affiche répétitions et charge")
-                    sideTag(set)
-                    Spacer(minLength: 0)
-                } else {
-                    TextField("0", text: repsText(for: set.id))
-                        .keyboardType(.numberPad)
-                        .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body, digits: true))
-                        .foregroundStyle(SharpitColor.foreground)
-                        .multilineTextAlignment(.trailing)
-                        .focused($focusedField, equals: .reps(set.id))
-                        .frame(width: 44, alignment: .trailing)
-                        .accessibilityLabel("Répétitions")
-
-                    // Each figure carries its unit: « 15 × 10 kg » left the first one unnamed, and a
-                    // load typed there was stored as repetitions — then prescribed back by the coach.
-                    Text("rép. ×")
-                        .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                        .foregroundStyle(SharpitColor.slate)
-                        .fixedSize()
-                        .padding(.leading, -SharpitSpacing.xs)
-                        .padding(.trailing, SharpitSpacing.xs)
-                        .accessibilityHidden(true)
-
-                    // No load prescribed: an empty field, not a « 0 » read as a weight.
-                    TextField("—", text: weightText(for: set.id))
-                        .keyboardType(.decimalPad)
-                        .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body, digits: true))
-                        .foregroundStyle(SharpitColor.foreground)
-                        .multilineTextAlignment(.trailing)
-                        .focused($focusedField, equals: .weight(set.id))
-                        .frame(width: 72, alignment: .trailing)
-                        .accessibilityLabel("Charge en kilogrammes")
-
-                    Button {
-                        session.setUsesDuration(id: set.id, true)
-                        focusedField = nil
-                    } label: {
-                        Text("kg")
-                            .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                            .foregroundStyle(SharpitColor.slate)
-                            .underline(pattern: .dot)
-                            .padding(.leading, -SharpitSpacing.xs)
-                            .padding(.trailing, 4)
-                            .padding(.vertical, 2)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Passer en durée")
-                    .accessibilityHint("Affiche une durée en minutes")
-
-                    sideTag(set)
-                    Spacer(minLength: 0)
-                }
-
-                if set.isHold {
-                    // Kept in place once the set is done, hidden: the row's text must not shift on a tick.
+                    setField(
+                        text: durationText(for: set.id),
+                        unit: (set.durationUsesMinutes ? String(localized: "min") : String(localized: "s")) + sideSuffix(set),
+                        keyboard: .numberPad,
+                        focus: .duration(set.id),
+                        accessibility: set.durationUsesMinutes ? String(localized: "Durée en minutes") : String(localized: "Durée en secondes")
+                    )
+                    // Kept in place once the set is done, hidden: the row must not shift on a tick.
                     Button {
                         focusedField = nil
                         path.append(.hold(set.id))
                     } label: {
-                        Image(systemName: "play.circle")
-                            .font(.title2)
+                        Image(systemName: "play.fill")
+                            .font(.system(size: 15, weight: .semibold))
                             .foregroundStyle(SharpitColor.foreground)
+                            .frame(width: 36, height: 36)
+                            .background(Circle().strokeBorder(SharpitColor.outline, lineWidth: 1))
                             .frame(width: 44, height: 44)
                             .contentShape(Rectangle())
                     }
@@ -751,9 +576,29 @@ struct GuidedStrengthWorkoutView: View {
                     .disabled(set.isDone)
                     .accessibilityHidden(set.isDone)
                     .accessibilityLabel(set.perSide ? String(localized: "Lancer le maintien, côté gauche puis droit") : String(localized: "Lancer le maintien"))
+                } else {
+                    // Each figure carries its unit: « 15 × 10 kg » left the first one unnamed, and a
+                    // load typed there was stored as repetitions — then prescribed back by the coach.
+                    setField(
+                        text: repsText(for: set.id),
+                        unit: String(localized: "rép.") + sideSuffix(set),
+                        keyboard: .numberPad,
+                        focus: .reps(set.id),
+                        accessibility: String(localized: "Répétitions")
+                    )
+                    // No load prescribed: an empty field, not a « 0 » read as a weight.
+                    setField(
+                        text: weightText(for: set.id),
+                        unit: String(localized: "kg"),
+                        placeholder: "—",
+                        keyboard: .decimalPad,
+                        focus: .weight(set.id),
+                        accessibility: String(localized: "Charge en kilogrammes")
+                    )
                 }
 
                 Button {
+                    focusedField = nil
                     if set.isDone {
                         session.uncompleteSet(id: set.id)
                     } else {
@@ -761,8 +606,8 @@ struct GuidedStrengthWorkoutView: View {
                     }
                 } label: {
                     Image(systemName: set.isDone ? "checkmark.circle.fill" : "circle")
-                        .font(.system(size: 24, weight: .regular))
-                        .foregroundStyle(set.isDone ? SharpitColor.pillarRecovery : SharpitColor.outline)
+                        .font(.system(size: 28, weight: .regular))
+                        .foregroundStyle(set.isDone ? SharpitColor.foreground : SharpitColor.outline)
                         .contentTransition(.symbolEffect(.replace))
                         .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
@@ -770,9 +615,47 @@ struct GuidedStrengthWorkoutView: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel(set.isDone ? String(localized: "Série faite") : String(localized: "Marquer la série"))
             }
-            .frame(minHeight: 58)
+            .frame(minHeight: 52)
             .animation(SharpitMotion.reveal, value: set.isDone)
         }
+    }
+
+    /// « /côté » after a unit when one set covers both sides.
+    private func sideSuffix(_ set: GuidedStrengthSetTarget) -> String {
+        set.perSide ? String(localized: "/côté") : ""
+    }
+
+    /// A figure typed in place, in a hairline capsule with its unit after it.
+    private func setField(
+        text: Binding<String>,
+        unit: String,
+        placeholder: String = "0",
+        keyboard: UIKeyboardType,
+        focus: FieldFocus,
+        accessibility: String
+    ) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
+            TextField(placeholder, text: text)
+                .keyboardType(keyboard)
+                .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body, digits: true))
+                .foregroundStyle(SharpitColor.foreground)
+                .multilineTextAlignment(.trailing)
+                .focused($focusedField, equals: focus)
+                .accessibilityLabel(accessibility)
+            Text(unit)
+                .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                .foregroundStyle(SharpitColor.slate)
+                .lineLimit(1)
+                .fixedSize()
+                .accessibilityHidden(true)
+        }
+        .padding(.horizontal, SharpitSpacing.sm)
+        .frame(maxWidth: .infinity, minHeight: 40)
+        .background(
+            Capsule().strokeBorder(focusedField == focus ? SharpitColor.foreground : SharpitColor.outline, lineWidth: 1)
+        )
+        .contentShape(Capsule())
+        .onTapGesture { focusedField = focus }
     }
 
     /// Out of sight, still running: the bar above the tabs brings it back.
@@ -800,16 +683,6 @@ struct GuidedStrengthWorkoutView: View {
                 completeSet(id: id)
                 if path.last == .hold(id) { path.removeLast() }
             }
-        }
-    }
-
-    @ViewBuilder
-    private func sideTag(_ set: GuidedStrengthSetTarget) -> some View {
-        if set.perSide {
-            Text("par côté")
-                .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                .foregroundStyle(SharpitColor.slate)
-                .lineLimit(1)
         }
     }
 
@@ -1123,7 +996,7 @@ struct GuidedStrengthWorkoutView: View {
 
     private func endRest() {
         stopRest()
-        path = session.current.map { [.exercise($0.exerciseName)] } ?? []
+        path = []
     }
 
     private func stopRest(keepingLiveActivity: Bool = true) {
@@ -1351,46 +1224,3 @@ private struct GuidedRPEScale: View {
         }
     }
 }
-
-/// An exercise's figures between two hairlines: last time, the best, today's volume — a column
-/// each, its name over it. The volume's column is there before any set is done, empty.
-private struct ExerciseFiguresStrip: View {
-    let history: V1StrengthExercise?
-    let volume: String?
-
-    private var columns: [(label: String, value: String?)] {
-        var columns: [(String, String?)] = []
-        if let history {
-            columns.append((String(localized: "Dernière fois"), StrengthHistoryReadout.lastFigure(history)))
-            if let best = StrengthHistoryReadout.bestFigure(history) { columns.append((String(localized: "Meilleur"), best)) }
-        }
-        columns.append((String(localized: "Volume"), volume))
-        return columns
-    }
-
-    var body: some View {
-        VStack(spacing: 0) {
-            CliniqueDivider()
-            HStack(alignment: .top, spacing: SharpitSpacing.sm) {
-                ForEach(Array(columns.enumerated()), id: \.offset) { _, column in
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(column.label)
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.slate)
-                            .lineLimit(1)
-                        Text(column.value ?? "—")
-                            .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .subheadline, digits: true))
-                            .foregroundStyle(column.value == nil ? SharpitColor.slate : SharpitColor.foreground)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.75)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .accessibilityElement(children: .combine)
-                }
-            }
-            .padding(.vertical, 10)
-            CliniqueDivider()
-        }
-    }
-}
-

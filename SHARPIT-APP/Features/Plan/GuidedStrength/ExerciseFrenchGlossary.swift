@@ -69,6 +69,7 @@ nonisolated enum ExerciseFrenchGlossary {
         "oiseau": ["rear", "reverse fly"],
         "haussement": ["shrug"],
         "gainage": ["plank"],
+        "gobelet": ["goblet"],
         "planche": ["plank"],
         "pont": ["bridge"],
         "abdo": ["crunch", "sit up"],

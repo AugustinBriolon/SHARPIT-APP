@@ -353,9 +353,10 @@ enum ExercisePickerReadout {
         ]
     }
 
-    /// « Dernière fois … · Meilleur … », then the athlete's own note on it when there is one.
+    /// « Dernière fois 4 × 8 », then the athlete's own note on it when there is one. No load:
+    /// the list names the exercises, their sheet gives the figures.
     static func detail(_ exercise: V1StrengthExercise) -> String {
-        [StrengthHistoryReadout.line(exercise), exercise.athleteNote].compactMap { $0 }.joined(separator: "\n")
+        [StrengthHistoryReadout.lastSets(exercise), exercise.athleteNote].compactMap { $0 }.joined(separator: "\n")
     }
 
     static func zoneNote(_ zone: String) -> String { String(localized: "Zone travaillée : \(zone)") }

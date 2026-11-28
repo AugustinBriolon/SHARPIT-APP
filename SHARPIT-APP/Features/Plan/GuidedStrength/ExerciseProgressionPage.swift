@@ -1,16 +1,53 @@
 import Charts
 import SwiftUI
 
-/// « Progression » of one exercise, pushed from its page in the guided session: the best load (or
-/// the longest hold) of each day it was done as a line, then every day's sets, newest first. Read
-/// from the sets already logged (`/api/v1/strength-exercises/progression`).
+/// « Progression » of one exercise, pushed from its card in the guided session: its picture and
+/// name over `ExerciseProgressionContent`.
 struct ExerciseProgressionPage: View {
+    let name: String
+    let tokenProvider: () async throws -> String
+    var preloaded: [V1ExerciseSession]?
+
+    /// `preloaded` skips the read: the Debug screen demo, which has no server.
+    init(name: String, tokenProvider: @escaping () async throws -> String, preloaded: [V1ExerciseSession]? = nil) {
+        self.name = name
+        self.tokenProvider = tokenProvider
+        self.preloaded = preloaded
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+                if let gif = ExerciseMediaCatalog.gifURL(name: name) {
+                    GuidedExerciseMediaView(url: gif, height: 180)
+                    Text(ExerciseMediaCatalog.attribution)
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.slate)
+                }
+                Text(name)
+                    .font(SharpitTypography.system(size: 28, weight: .semibold, relativeTo: .title))
+                    .tracking(-0.5)
+                    .foregroundStyle(SharpitColor.foreground)
+                    .accessibilityAddTraits(.isHeader)
+                ExerciseProgressionContent(name: name, tokenProvider: tokenProvider, preloaded: preloaded)
+            }
+            .padding(.horizontal, SharpitSpacing.pageInset)
+            .padding(.vertical, SharpitSpacing.md)
+        }
+        .navigationTitle("Progression")
+    }
+}
+
+/// The days an exercise was done: the best load (or the longest hold) of each as a line, then
+/// every day's sets, newest first. Read from the sets already logged
+/// (`/api/v1/strength-exercises/progression`, under each of the exercise's spellings). Laid in a
+/// page that scrolls: its own page, or the « Historique » of the exercise's sheet.
+struct ExerciseProgressionContent: View {
     let name: String
     let tokenProvider: () async throws -> String
 
     @State private var phase: Phase
 
-    /// `preloaded` skips the read: the Debug screen demo, which has no server.
     init(name: String, tokenProvider: @escaping () async throws -> String, preloaded: [V1ExerciseSession]? = nil) {
         self.name = name
         self.tokenProvider = tokenProvider
@@ -28,7 +65,7 @@ struct ExerciseProgressionPage: View {
             switch phase {
             case .loading:
                 ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .frame(maxWidth: .infinity, minHeight: 160)
             case let .failed(message):
                 SharpitStateMessage.failed(message) { Task { await load() } }
                     .embedded()
@@ -36,7 +73,6 @@ struct ExerciseProgressionPage: View {
                 content(sessions)
             }
         }
-        .navigationTitle("Progression")
         .task {
             guard phase == .loading else { return }
             await load()
@@ -45,43 +81,28 @@ struct ExerciseProgressionPage: View {
 
     private func content(_ sessions: [V1ExerciseSession]) -> some View {
         let points = ExerciseProgressionReadout.points(sessions)
-        return ScrollView {
-            VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-                if let gif = ExerciseMediaCatalog.gifURL(name: name) {
-                    GuidedExerciseMediaView(url: gif, height: 180)
-                    Text(ExerciseMediaCatalog.attribution)
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.slate)
-                }
-                Text(name)
-                    .font(SharpitTypography.system(size: 28, weight: .semibold, relativeTo: .title))
-                    .tracking(-0.5)
-                    .foregroundStyle(SharpitColor.foreground)
-                    .accessibilityAddTraits(.isHeader)
-                if let change = ExerciseProgressionReadout.change(points) {
-                    Text(change)
-                        .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout, digits: true))
-                        .foregroundStyle(SharpitColor.slate)
-                }
-                if points.count >= 2 {
-                    chart(points)
-                }
-                if sessions.isEmpty {
-                    Text("Aucune série enregistrée sur cet exercice.")
-                        .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                        .foregroundStyle(SharpitColor.slate)
-                } else {
-                    VStack(alignment: .leading, spacing: 0) {
+        return VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+            if let change = ExerciseProgressionReadout.change(points) {
+                Text(change)
+                    .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout, digits: true))
+                    .foregroundStyle(SharpitColor.slate)
+            }
+            if points.count >= 2 {
+                chart(points)
+            }
+            if sessions.isEmpty {
+                Text("Aucune série enregistrée sur cet exercice.")
+                    .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                    .foregroundStyle(SharpitColor.slate)
+            } else {
+                VStack(alignment: .leading, spacing: 0) {
+                    CliniqueDivider()
+                    ForEach(sessions.reversed()) { session in
+                        sessionRow(session)
                         CliniqueDivider()
-                        ForEach(sessions.reversed()) { session in
-                            sessionRow(session)
-                            CliniqueDivider()
-                        }
                     }
                 }
             }
-            .padding(.horizontal, SharpitSpacing.pageInset)
-            .padding(.vertical, SharpitSpacing.md)
         }
     }
 
