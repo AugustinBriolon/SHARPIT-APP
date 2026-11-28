@@ -30,6 +30,9 @@ struct GuidedStrengthWorkoutView: View {
     @State private var noteTarget: ExerciseNoteTarget?
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(ShellRouter.self) private var router: ShellRouter?
+    /// When « Terminer » was tapped: the session's end, for its recap.
+    @State private var endedAt: Date?
     @Environment(\.requestReview) private var requestReview
     /// Nil when shown on its own (the design gallery): then it is a plain cover.
     @Environment(GuidedWorkoutDock.self) private var dock: GuidedWorkoutDock?
@@ -63,6 +66,8 @@ struct GuidedStrengthWorkoutView: View {
     private enum Phase: Equatable {
         case overview
         case summary
+        /// Saved: what was done, read back once, before the session leaves.
+        case recap(activityId: String)
     }
 
     private enum Route: Hashable {
@@ -70,8 +75,8 @@ struct GuidedStrengthWorkoutView: View {
         case rest
         /// A timed hold's countdown, both sides for a one-sided move.
         case hold(UUID)
-        /// Every day the exercise was done, from its page.
-        case progression(String)
+        /// The exercise's sheet opened on « Évolution », from its card's foot.
+        case evolution(String)
     }
 
     private var focusedExercise: String? {
@@ -100,6 +105,9 @@ struct GuidedStrengthWorkoutView: View {
                 case .summary:
                     summaryPage
                         .transition(.opacity)
+                case let .recap(activityId):
+                    recapPage(activityId: activityId)
+                        .transition(.opacity)
                 }
             }
             .animation(SharpitMotion.reveal, value: phase)
@@ -113,10 +121,7 @@ struct GuidedStrengthWorkoutView: View {
                     case let .exercise(name): exerciseGuide(name: name)
                     case .rest: restPage
                     case let .hold(id): holdPage(id: id)
-                    case let .progression(name):
-                        if let tokenProvider {
-                            ExerciseProgressionPage(name: name, tokenProvider: tokenProvider)
-                        }
+                    case let .evolution(name): exerciseGuide(name: name, opening: .evolution)
                     }
                 }
                 .cliniqueSheet(wash: .coach, height: 220)
@@ -198,13 +203,16 @@ struct GuidedStrengthWorkoutView: View {
     private var toolbarContent: some ToolbarContent {
         // « Réduire » stays one tap away, in the open; finishing and quitting are rarer and
         // one tap further, in « … » (a Menu, not a confirmationDialog: it opens from the button).
-        if dock != nil, !isLogging {
-            ToolbarItem(placement: .topBarLeading) { minimizeButton }
+        // Saved, the session has nothing left to hide or to quit: the recap's own buttons close it.
+        if !isRecap {
+            if dock != nil, !isLogging {
+                ToolbarItem(placement: .topBarLeading) { minimizeButton }
+            }
+            if phase == .overview, !isLogging {
+                ToolbarItem(placement: .principal) { sessionStatus }
+            }
+            ToolbarItem(placement: .primaryAction) { moreMenu }
         }
-        if phase == .overview, !isLogging {
-            ToolbarItem(placement: .principal) { sessionStatus }
-        }
-        ToolbarItem(placement: .primaryAction) { moreMenu }
     }
 
     private var moreMenu: some View {
@@ -213,6 +221,7 @@ struct GuidedStrengthWorkoutView: View {
             if phase == .overview, !isLogging {
                 Button("Terminer la séance", systemImage: "checkmark.circle") {
                     stopTimers()
+                    endedAt = .now
                     SharpitMotion.run { phase = .summary }
                 }
                 .disabled(session.completedCount == 0)
@@ -370,6 +379,7 @@ struct GuidedStrengthWorkoutView: View {
                         logging.onLogged(session.activityExercises())
                         dismiss()
                     } else {
+                        endedAt = .now
                         SharpitMotion.run { phase = .summary }
                     }
                 } label: {
@@ -393,7 +403,7 @@ struct GuidedStrengthWorkoutView: View {
 
     /// An exercise as the session shows it: its picture and name (opening its sheet), how many
     /// sets and where it stands, then the sets themselves, typed and ticked in place, and at its
-    /// foot « Progression » and « Ajouter une série » (the athlete's call, 2026-11-28).
+    /// foot « Évolution » and « Ajouter une série » (the athlete's call, 2026-11-28).
     private func exerciseCard(group: GuidedStrengthExerciseGroup, order: Int) -> some View {
         let done = group.doneCount(in: session.targets)
         let total = group.indices.count
@@ -476,9 +486,9 @@ struct GuidedStrengthWorkoutView: View {
                 if hasHistory {
                     Button {
                         focusedField = nil
-                        path.append(.progression(group.name))
+                        path.append(.evolution(group.name))
                     } label: {
-                        Label("Progression", systemImage: "chart.line.uptrend.xyaxis")
+                        Label("Évolution", systemImage: "chart.line.uptrend.xyaxis")
                             .frame(maxWidth: .infinity, minHeight: 44)
                             .contentShape(.rect)
                     }
@@ -520,7 +530,7 @@ struct GuidedStrengthWorkoutView: View {
 
     // MARK: - Exercise sheet
 
-    private func exerciseGuide(name: String) -> some View {
+    private func exerciseGuide(name: String, opening tab: ExerciseGuidePage.Tab = .guide) -> some View {
         let group = session.exerciseGroups.first { $0.name == name }
         let volume = group?.volumeKg(in: session.targets) ?? 0
         let position = session.exerciseGroups.firstIndex { $0.name == name }
@@ -532,6 +542,7 @@ struct GuidedStrengthWorkoutView: View {
             coachNotes: group?.notes,
             volume: volume > 0 ? "\(GuidedStrengthSetTarget.volumeFigure(volume)) kg" : nil,
             tokenProvider: tokenProvider,
+            opening: tab,
             onEditNote: { noteTarget = ExerciseNoteTarget(name: name) }
         )
     }
@@ -779,52 +790,55 @@ struct GuidedStrengthWorkoutView: View {
         session.targets.last(where: \.isDone)
     }
 
-    // MARK: - Summary
+    // MARK: - Ressenti
 
+    private var isRecap: Bool {
+        if case .recap = phase { return true }
+        return false
+    }
+
+    /// « Comment s’est passée la séance ? »: the effort on the app's scale, what that level means,
+    /// the feeling, then the save docked. One question a page, nothing else around it.
     private var summaryPage: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(session.title)
-                        .font(SharpitTypography.cardTitle)
-                        .tracking(SharpitTypography.cardTitleTracking)
-                        .foregroundStyle(SharpitColor.foreground)
-                    Text("\(session.completedCount) série\(session.completedCount == 1 ? "" : "s") cochée\(session.completedCount == 1 ? "" : "s")")
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.slate)
-                }
-
-                // Feedback first — the job of this screen — then the set list as context.
-                feedbackPanel
+                Text("Comment s'est passée la séance ?")
+                    .font(SharpitTypography.system(size: 28, weight: .semibold, relativeTo: .title))
+                    .tracking(-0.5)
+                    .foregroundStyle(SharpitColor.foreground)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityAddTraits(.isHeader)
 
                 VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                    Text("Exercices")
-                        .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .body))
+                    CliniqueScale(
+                        title: String(localized: "Effort perçu"),
+                        values: Array(1...10),
+                        selection: rpe,
+                        word: SessionEffortReadout.word,
+                        ends: (String(localized: "Très facile"), String(localized: "Maximal"))
+                    ) { rpe = $0 }
+                    // Reserved height: choosing a level never moves what is under it.
+                    Text(GuidedStrengthReadout.effortMeaning(rpe) ?? " ")
+                        .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
                         .foregroundStyle(SharpitColor.slate)
-                    SharpitInsetGroup {
-                        ForEach(Array(session.exerciseGroups.enumerated()), id: \.element.id) { offset, group in
-                            let volume = group.volumeKg(in: session.targets)
-                            let done = group.doneCount(in: session.targets)
-                            SharpitInsetRow(title: group.name) {
-                                SharpitNumberChip(number: offset + 1)
-                            } trailing: {
-                                Text("\(done) série\(done == 1 ? "" : "s")")
-                                    .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline, digits: true))
-                                    .foregroundStyle(SharpitColor.slate)
-                                if volume > 0 {
-                                    volumeFigure(volume)
-                                }
-                            }
-                        }
-                    }
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, minHeight: 40, alignment: .topLeading)
+                        .accessibilityHidden(rpe == nil)
                 }
+
+                feelingPicker
 
                 if let failure {
                     Label(failure, systemImage: "exclamationmark.triangle.fill")
                         .font(SharpitTypography.meta)
                         .foregroundStyle(SharpitColor.signalRisk)
                 }
-
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, SharpitSpacing.lg)
+        }
+        .safeAreaInset(edge: .bottom) {
+            SharpitBareActions {
                 SharpitPrimaryButton(
                     title: session.completedCount == 0 ? String(localized: "Fermer") : String(localized: "Enregistrer la séance"),
                     isBusy: isSaving
@@ -832,83 +846,170 @@ struct GuidedStrengthWorkoutView: View {
                     Task { await save() }
                 }
                 .disabled(isSaving)
-
                 // « Terminer » is not a one-way door: back to the sets, nothing lost.
                 Button("Reprendre la séance") {
                     failure = nil
+                    endedAt = nil
                     SharpitMotion.run { phase = .overview }
                 }
                 .font(SharpitTypography.bodyEmphasis)
                 .foregroundStyle(SharpitColor.foreground)
-                .frame(maxWidth: .infinity, minHeight: SharpitSpacing.rowHeight)
+                .frame(maxWidth: .infinity, minHeight: 44)
                 .disabled(isSaving)
             }
-            .padding(SharpitSpacing.cardPadding)
-            .sharpitSurface(.panel)
-            .padding(SharpitSpacing.pageInset)
         }
     }
 
-    private var feedbackPanel: some View {
-        // Flat: it sits inside the summary card.
-        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            SharpitEyebrow(String(localized: "Comment c’était ?"))
-            rpePicker
-            feelingPicker
-        }
-    }
-
-    private var rpePicker: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text("Effort")
-                    .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .body))
-                    .foregroundStyle(SharpitColor.slate)
-                Spacer()
-                Text("RPE \(rpe.map(String.init) ?? "—")")
-                    .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .body, digits: true))
-                    .foregroundStyle(SharpitColor.foreground)
-                    .contentTransition(.numericText())
-            }
-            SharpitBarTrack(fraction: Double(rpe ?? 0) / 10)
-                .frame(height: SharpitTokens.barThickness)
-            // Full-width ticks — finger tracks 1:1 across the scale (Apple direct manipulation).
-            GuidedRPEScale(value: $rpe)
-        }
-    }
-
+    /// The feeling on the same kind of track as the effort, as the session's own sheet asks it.
     private var feelingPicker: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitFieldLabel(String(localized: "Ressenti"))
-            HStack(spacing: SharpitSpacing.xs) {
-                ForEach(SessionFeeling.allCases) { option in
-                    let selected = feeling == option
-                    Button {
-                        SharpitMotion.run(SharpitMotion.selection) {
-                            feeling = option
-                        }
-                    } label: {
-                        Text(option.emoji)
-                            .font(.system(size: 32))
-                            .frame(maxWidth: .infinity, minHeight: 44)
-                            .padding(.vertical, SharpitSpacing.xs)
-                            .sharpitConcentricBackground(selected ? SharpitColor.tile : Color.clear, minimum: SharpitRadius.small)
-                            .opacity(feeling == nil || selected ? 1 : 0.38)
-                            .scaleEffect(selected ? 1.06 : 1)
-                            .animation(SharpitMotion.selection, value: feeling)
-                    }
-                    .buttonStyle(.sharpitPressable)
-                    .accessibilityLabel(option.storedValue)
-                    .accessibilityAddTraits(selected ? .isSelected : [])
-                }
+            CliniqueScale(
+                title: String(localized: "Ressenti"),
+                values: SessionFeeling.allCases.map(\.rawValue),
+                selection: feeling?.rawValue,
+                word: { SessionFeeling(rawValue: $0)?.storedValue },
+                ends: (SessionFeeling.veryBad.storedValue, SessionFeeling.veryGood.storedValue)
+            ) { raw in
+                feeling = SessionFeeling(rawValue: raw)
             }
             // Reserve height so selecting doesn't jump the layout (CLS).
             Text(feeling?.hint ?? " ")
-                .font(SharpitTypography.meta)
+                .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
                 .foregroundStyle(SharpitColor.slate)
+                .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .accessibilityHidden(feeling == nil)
         }
+    }
+
+    // MARK: - Recap
+
+    /// What was done, once it is saved: the seal, the session's name and when, its figures, then
+    /// each exercise and its sets. « Voir l’activité » opens it in Activité; « Terminé » closes.
+    private func recapPage(activityId: String) -> some View {
+        let recap = GuidedStrengthRecap(session: session, endedAt: endedAt ?? .now)
+        return ScrollView {
+            VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
+                VStack(spacing: SharpitSpacing.sm) {
+                    GuidedSessionSavedSeal()
+                    Text(session.title)
+                        .font(SharpitTypography.system(size: 28, weight: .semibold, relativeTo: .title))
+                        .tracking(-0.5)
+                        .foregroundStyle(SharpitColor.foreground)
+                        .multilineTextAlignment(.center)
+                        .accessibilityAddTraits(.isHeader)
+                    Text(recap.when)
+                        .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout, digits: true))
+                        .foregroundStyle(SharpitColor.slate)
+                }
+                .frame(maxWidth: .infinity)
+
+                recapFigures(recap)
+
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Exercices")
+                        .font(SharpitTypography.sectionTitle)
+                        .tracking(SharpitTypography.sectionTitleTracking)
+                        .foregroundStyle(SharpitColor.foreground)
+                        .padding(.bottom, SharpitSpacing.xs)
+                        .accessibilityAddTraits(.isHeader)
+                    ForEach(recap.exercises) { exercise in
+                        CliniqueDivider()
+                        HStack(alignment: .top, spacing: SharpitSpacing.sm) {
+                            GuidedExerciseThumbView(
+                                url: ExerciseMediaCatalog.thumbURL(catalogId: exercise.catalogId, name: exercise.name),
+                                size: 44
+                            )
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(exercise.name)
+                                    .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body))
+                                    .foregroundStyle(SharpitColor.foreground)
+                                ForEach(Array(exercise.lines.enumerated()), id: \.offset) { _, line in
+                                    Text(line)
+                                        .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline, digits: true))
+                                        .foregroundStyle(SharpitColor.slate)
+                                }
+                            }
+                            Spacer(minLength: 0)
+                        }
+                        .padding(.vertical, 12)
+                        .accessibilityElement(children: .combine)
+                    }
+                    CliniqueDivider()
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, SharpitSpacing.lg)
+        }
+        .safeAreaInset(edge: .bottom) {
+            SharpitBareActions {
+                HStack(spacing: SharpitSpacing.sm) {
+                    if router != nil {
+                        Button {
+                            leaveRecap(activityId: activityId, opening: true)
+                        } label: {
+                            Text("Voir l’activité").frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(CliniqueButtonStyle(kind: .outline, isLarge: true))
+                    }
+                    Button {
+                        leaveRecap(activityId: activityId, opening: false)
+                    } label: {
+                        Text("Terminé").frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(CliniqueButtonStyle(kind: .primary, isLarge: true))
+                }
+            }
+        }
+    }
+
+    /// Two figures a row between hairlines, as a session's page reads them.
+    private func recapFigures(_ recap: GuidedStrengthRecap) -> some View {
+        var figures: [(String, String)] = [
+            (String(localized: "Durée"), recap.duration),
+            (String(localized: "Séries"), "\(recap.sets)"),
+        ]
+        if recap.reps > 0 { figures.append((String(localized: "Répétitions"), "\(recap.reps)")) }
+        if recap.volumeKg > 0 {
+            figures.append((String(localized: "Volume"), "\(GuidedStrengthSetTarget.volumeFigure(recap.volumeKg)) kg"))
+        }
+        if let rpe {
+            let word = SessionEffortReadout.word(rpe).map { " · \($0)" } ?? ""
+            figures.append((String(localized: "Effort"), "\(rpe)/10\(word)"))
+        }
+        let rows = stride(from: 0, to: figures.count, by: 2).map { Array(figures[$0..<min($0 + 2, figures.count)]) }
+        return VStack(spacing: 0) {
+            CliniqueDivider()
+            ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
+                HStack(alignment: .top, spacing: SharpitSpacing.md) {
+                    ForEach(Array(row.enumerated()), id: \.offset) { _, figure in
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(figure.0)
+                                .font(SharpitTypography.meta)
+                                .foregroundStyle(SharpitColor.slate)
+                            Text(figure.1)
+                                .font(SharpitTypography.system(size: 22, weight: .semibold, relativeTo: .title3, digits: true))
+                                .foregroundStyle(SharpitColor.foreground)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .accessibilityElement(children: .combine)
+                    }
+                    if row.count == 1 { Spacer().frame(maxWidth: .infinity) }
+                }
+                .padding(.vertical, 12)
+                CliniqueDivider()
+            }
+        }
+    }
+
+    /// The screen behind is told now (its toast, its refresh), then the session leaves; « Voir
+    /// l’activité » then opens the session in Activité.
+    private func leaveRecap(activityId: String, opening: Bool) {
+        finish?.onFinished(activityId)
+        close()
+        if opening { router?.openActivity(id: activityId) }
     }
 
     // MARK: - Actions
@@ -1077,14 +1178,14 @@ struct GuidedStrengthWorkoutView: View {
             if let plannedId = session.plannedSessionId {
                 try? await finish.linker?.link(sessionId: plannedId, activityId: activityId, token: token)
             }
-            finish.onFinished(activityId)
             ReviewPrompt.askAfterWin(requestReview)
             // Mirrored into Apple Santé behind: the session is saved either way.
             let (title, start, end) = (session.title, session.startedAt, Date.now)
             Task { try? await HealthKitWriter().saveStrengthWorkout(activityId: activityId, title: title, start: start, end: end) }
             // The sets just saved are the next session's defaults.
             Task { await StrengthLibraryStore.shared.load(tokenProvider: finish.tokenProvider, fresh: true) }
-            close()
+            // The recap first; the screen behind is told when it closes (`leaveRecap`).
+            SharpitMotion.run { phase = .recap(activityId: activityId) }
         } catch let SharpitAPIError.message(reason) {
             failure = reason
         } catch {
@@ -1160,67 +1261,16 @@ struct GuidedStrengthWorkoutView: View {
     }
 }
 
-/// Full-width RPE tick scale — finger tracks 1:1; every unit spans the panel.
-private struct GuidedRPEScale: View {
-    @Binding var value: Int?
-    private let range = 1...10
+/// « Séance enregistrée »: the recap's seal, arriving once with the page — the session is the win,
+/// the seal says it is kept. No confetti: the app animates meaning only.
+private struct GuidedSessionSavedSeal: View {
+    @State private var shown = false
 
     var body: some View {
-        VStack(spacing: SharpitSpacing.xs) {
-            GeometryReader { geo in
-                let width = max(geo.size.width, 1)
-                HStack(alignment: .bottom, spacing: 0) {
-                    ForEach(Array(range), id: \.self) { mark in
-                        let selected = value == mark
-                        let major = mark == 1 || mark == 5 || mark == 10
-                        Capsule()
-                            .fill(
-                                selected
-                                    ? SharpitColor.primary
-                                    : SharpitColor.foreground.opacity(major ? 0.45 : 0.22)
-                            )
-                            .frame(width: selected ? 3 : (major ? 2 : 1.5), height: selected ? 36 : (major ? 28 : 18))
-                            .frame(maxWidth: .infinity, alignment: .center)
-                    }
-                }
-                .frame(maxHeight: .infinity, alignment: .bottom)
-                .contentShape(Rectangle())
-                .gesture(
-                    DragGesture(minimumDistance: 0)
-                        .onChanged { gesture in
-                            SharpitHaptics.prepare()
-                            let t = min(max(gesture.location.x / width, 0), 1)
-                            let next = range.lowerBound + Int((t * CGFloat(range.count - 1)).rounded())
-                            guard next != value else { return }
-                            value = next
-                            SharpitHaptics.play(.notch(major: next == 1 || next == 5 || next == 10))
-                        }
-                )
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel("Effort perçu")
-                .accessibilityValue(value.map { "\($0) RPE" } ?? String(localized: "Non renseigné"))
-                .accessibilityAdjustableAction { direction in
-                    let current = value ?? 5
-                    let next = direction == .increment ? current + 1 : current - 1
-                    guard range.contains(next) else { return }
-                    value = next
-                    SharpitHaptics.play(.notch(major: next == 5 || next == 10))
-                }
-            }
-            .frame(height: 44)
-
-            HStack {
-                Text("1")
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.slate)
-                Spacer()
-                Text("10")
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.slate)
-            }
-        }
-        .onAppear {
-            if value == nil { value = 5 }
-        }
+        CliniqueStatusPill(String(localized: "Séance enregistrée"), status: .good)
+            .scaleEffect(shown ? 1 : 0.85)
+            .opacity(shown ? 1 : 0)
+            .onAppear { SharpitMotion.run(SharpitMotion.reveal) { shown = true } }
     }
 }
+

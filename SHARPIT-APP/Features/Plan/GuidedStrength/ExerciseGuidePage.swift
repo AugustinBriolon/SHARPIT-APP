@@ -5,11 +5,14 @@ import SwiftUI
 ///
 /// « Guide » holds the demonstration, a search for its technique on YouTube, the figures — the
 /// last session, the best, today's volume: the load lives here, not in the lists — the coach's
-/// instruction and the athlete's pinned note. « Historique » is every day it was done.
+/// instruction and the athlete's pinned note. « À propos » names the muscle, the zone and the
+/// equipment as the catalog describes them. « Évolution » is the exercise's curve over the days it
+/// was done, then those days' sets.
 struct ExerciseGuidePage: View {
     enum Tab: Hashable {
         case guide
-        case history
+        case about
+        case evolution
     }
 
     let name: String
@@ -24,8 +27,39 @@ struct ExerciseGuidePage: View {
     var tokenProvider: (() async throws -> String)?
     var onEditNote: () -> Void = {}
 
-    @State private var tab: Tab = .guide
+    @State private var tab: Tab
     @Environment(\.openURL) private var openURL
+
+    init(
+        name: String,
+        catalogId: String? = nil,
+        position: String? = nil,
+        coachNotes: String? = nil,
+        volume: String? = nil,
+        tokenProvider: (() async throws -> String)? = nil,
+        opening tab: Tab = .guide,
+        onEditNote: @escaping () -> Void = {}
+    ) {
+        self.name = name
+        self.catalogId = catalogId
+        self.position = position
+        self.coachNotes = coachNotes
+        self.volume = volume
+        self.tokenProvider = tokenProvider
+        self.onEditNote = onEditNote
+        _tab = State(initialValue: tab)
+    }
+
+    private var details: ExerciseMediaCatalog.Details? {
+        ExerciseMediaCatalog.details(catalogId: catalogId, name: name)
+    }
+
+    private var tabs: [SharpitSegmentedControl<Tab>.Option] {
+        var tabs: [SharpitSegmentedControl<Tab>.Option] = [.init(value: .guide, label: String(localized: "Guide"))]
+        if details != nil { tabs.append(.init(value: .about, label: String(localized: "À propos"))) }
+        if tokenProvider != nil { tabs.append(.init(value: .evolution, label: String(localized: "Évolution"))) }
+        return tabs
+    }
 
     var body: some View {
         ScrollView {
@@ -42,19 +76,23 @@ struct ExerciseGuidePage: View {
                         .foregroundStyle(SharpitColor.foreground)
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityAddTraits(.isHeader)
+                    if let details {
+                        Text(details.equipment)
+                            .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
+                            .foregroundStyle(SharpitColor.slate)
+                    }
                 }
 
-                if tokenProvider != nil {
-                    SharpitSegmentedControl(selection: $tab, options: [
-                        .init(value: .guide, label: String(localized: "Guide")),
-                        .init(value: .history, label: String(localized: "Historique")),
-                    ])
+                if tabs.count > 1 {
+                    SharpitSegmentedControl(selection: $tab, options: tabs)
                 }
 
                 switch tab {
                 case .guide:
                     guide
-                case .history:
+                case .about:
+                    if let details { about(details) }
+                case .evolution:
                     if let tokenProvider {
                         ExerciseProgressionContent(name: name, tokenProvider: tokenProvider)
                     }
@@ -93,6 +131,50 @@ struct ExerciseGuidePage: View {
                 section(String(localized: "Note épinglée")) { pinnedNote }
             }
         }
+    }
+
+    /// What the movement works and with what, as lines on the sheet. The catalog names one target
+    /// muscle and its zone; it draws no body map, so none is drawn.
+    private func about(_ details: ExerciseMediaCatalog.Details) -> some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
+            section(String(localized: "Muscles")) {
+                VStack(spacing: 0) {
+                    CliniqueDivider()
+                    aboutRow(symbol: "figure.strengthtraining.traditional", title: details.muscle, detail: String(localized: "Principal"))
+                    CliniqueDivider()
+                    aboutRow(symbol: "figure.stand", title: details.zone, detail: String(localized: "Zone"))
+                    CliniqueDivider()
+                }
+            }
+            section(String(localized: "Équipement")) {
+                VStack(spacing: 0) {
+                    CliniqueDivider()
+                    aboutRow(symbol: "dumbbell", title: details.equipment, detail: nil)
+                    CliniqueDivider()
+                }
+            }
+        }
+    }
+
+    private func aboutRow(symbol: String, title: String, detail: String?) -> some View {
+        HStack(spacing: SharpitSpacing.sm) {
+            Image(systemName: symbol)
+                .font(.system(size: 17, weight: .regular))
+                .foregroundStyle(SharpitColor.foreground)
+                .frame(width: 28)
+                .accessibilityHidden(true)
+            Text(title)
+                .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body))
+                .foregroundStyle(SharpitColor.foreground)
+            Spacer(minLength: SharpitSpacing.xs)
+            if let detail {
+                Text(detail)
+                    .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                    .foregroundStyle(SharpitColor.slate)
+            }
+        }
+        .frame(minHeight: SharpitSpacing.rowHeight)
+        .accessibilityElement(children: .combine)
     }
 
     /// The movement filmed by others: a search, since no one link fits every exercise.

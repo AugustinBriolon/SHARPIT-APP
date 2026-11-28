@@ -92,3 +92,36 @@ private func day(_ date: String, kg: Double) -> V1ExerciseSession {
     #expect(url.host() == "www.youtube.com")
     #expect(url.absoluteString.contains("search_query=Abdos%20jackknife%20technique"))
 }
+
+@Test func theRecapFoldsLikeSetsAndCountsOnlyThoseTicked() throws {
+    let start = Date(timeIntervalSince1970: 1_790_000_000)
+    var session = GuidedStrengthSession.logging(
+        title: "Jambes",
+        exercises: [StrengthExerciseDraft(name: "Squat", sets: 3, reps: 8, weightKg: 20)],
+        startedAt: start
+    )
+    let last = try #require(session.targets.indices.last)
+    session.targets[last].loggedReps = 6
+    session.targets[last].loggedWeightKg = 22.5
+
+    let recap = GuidedStrengthRecap(session: session, endedAt: start.addingTimeInterval(42 * 60))
+
+    #expect(recap.duration == "42 min")
+    #expect(recap.sets == 3)
+    #expect(recap.reps == 22)
+    #expect(recap.volumeKg == 16 * 20 + 6 * 22.5)
+    #expect(recap.exercises.map(\.lines) == [["2 × 8 · 20 kg", "1 × 6 · 22,5 kg"]])
+    #expect(GuidedStrengthRecap.length(65 * 60) == "1 h 05")
+}
+
+@Test func theSheetSaysWhatTheExerciseWorksInFrench() throws {
+    let details = try #require(ExerciseMediaCatalog.details(name: "Abdos jackknife"))
+    #expect(details == .init(muscle: "Abdominaux", zone: "Tronc", equipment: "Poids du corps"))
+    #expect(ExerciseAnatomy.equipment("tire") == "Tire")
+}
+
+@Test func eachEffortLevelSaysWhatItMeans() {
+    #expect(GuidedStrengthReadout.effortMeaning(nil) == nil)
+    #expect((1...10).allSatisfy { GuidedStrengthReadout.effortMeaning($0) != nil })
+    #expect(GuidedStrengthReadout.effortMeaning(9) == "Une répétition en réserve, pas plus.")
+}

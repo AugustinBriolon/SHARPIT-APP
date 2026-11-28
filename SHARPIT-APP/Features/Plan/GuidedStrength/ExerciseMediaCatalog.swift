@@ -11,6 +11,9 @@ enum ExerciseMediaCatalog {
         var media: [String: String]
         var names: [String: String]
         var aliases: [String: String]
+        /// id → [body part, equipment, target muscle], the dataset's English words
+        /// (`scripts/exercise-details.py`).
+        var details: [String: [String]]? = nil
     }
 
     private static let index: Index = {
@@ -108,6 +111,27 @@ enum ExerciseMediaCatalog {
         return found
     }
 
+    /// What the catalog says an exercise works and with what, in French: the sheet's « À propos ».
+    struct Details: Equatable {
+        /// « Abdominaux »
+        let muscle: String
+        /// « Tronc »
+        let zone: String
+        /// « Poids du corps »
+        let equipment: String
+    }
+
+    static func details(catalogId: String? = nil, name: String? = nil) -> Details? {
+        guard let id = resolveCatalogId(catalogId: catalogId, name: name),
+              let words = index.details?[id], words.count == 3
+        else { return nil }
+        return Details(
+            muscle: ExerciseAnatomy.muscle(words[2]),
+            zone: ExerciseAnatomy.zone(words[0]),
+            equipment: ExerciseAnatomy.equipment(words[1])
+        )
+    }
+
     static func gifURL(catalogId: String? = nil, name: String? = nil) -> URL? {
         guard let id = resolveCatalogId(catalogId: catalogId, name: name),
               let mediaId = index.media[id]
@@ -175,5 +199,80 @@ enum ExerciseMediaCatalog {
             }
         }
         return scaled.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+    }
+}
+
+/// The dataset's anatomy and equipment words in French. A word not listed reads as written,
+/// capitalised: better English than nothing.
+enum ExerciseAnatomy {
+    static func muscle(_ english: String) -> String {
+        switch english {
+        case "abs": String(localized: "Abdominaux")
+        case "pectorals": String(localized: "Pectoraux")
+        case "biceps": String(localized: "Biceps")
+        case "glutes": String(localized: "Fessiers")
+        case "delts": String(localized: "Deltoïdes")
+        case "triceps": String(localized: "Triceps")
+        case "upper back": String(localized: "Haut du dos")
+        case "lats": String(localized: "Grands dorsaux")
+        case "calves": String(localized: "Mollets")
+        case "quads": String(localized: "Quadriceps")
+        case "forearms": String(localized: "Avant-bras")
+        case "cardiovascular system": String(localized: "Système cardiovasculaire")
+        case "hamstrings": String(localized: "Ischio-jambiers")
+        case "spine": String(localized: "Lombaires")
+        case "traps": String(localized: "Trapèzes")
+        case "adductors": String(localized: "Adducteurs")
+        case "serratus anterior": String(localized: "Dentelé antérieur")
+        case "abductors": String(localized: "Abducteurs")
+        case "levator scapulae": String(localized: "Élévateur de la scapula")
+        default: capitalised(english)
+        }
+    }
+
+    static func zone(_ english: String) -> String {
+        switch english {
+        case "upper arms": String(localized: "Bras")
+        case "upper legs": String(localized: "Cuisses")
+        case "back": String(localized: "Dos")
+        case "waist": String(localized: "Tronc")
+        case "chest": String(localized: "Poitrine")
+        case "shoulders": String(localized: "Épaules")
+        case "lower legs": String(localized: "Jambes")
+        case "lower arms": String(localized: "Avant-bras")
+        case "cardio": String(localized: "Cardio")
+        case "neck": String(localized: "Cou")
+        default: capitalised(english)
+        }
+    }
+
+    static func equipment(_ english: String) -> String {
+        switch english {
+        case "body weight": String(localized: "Poids du corps")
+        case "dumbbell": String(localized: "Haltères")
+        case "cable": String(localized: "Poulie")
+        case "barbell": String(localized: "Barre")
+        case "leverage machine": String(localized: "Machine guidée")
+        case "band", "resistance band": String(localized: "Élastique")
+        case "smith machine": String(localized: "Smith machine")
+        case "kettlebell": String(localized: "Kettlebell")
+        case "weighted": String(localized: "Lesté")
+        case "stability ball": String(localized: "Swiss ball")
+        case "ez barbell": String(localized: "Barre EZ")
+        case "assisted": String(localized: "Assisté")
+        case "sled machine": String(localized: "Presse")
+        case "medicine ball": String(localized: "Médecine-ball")
+        case "rope": String(localized: "Corde")
+        case "roller": String(localized: "Rouleau")
+        case "bosu ball": String(localized: "Bosu")
+        case "olympic barbell": String(localized: "Barre olympique")
+        case "wheel roller": String(localized: "Roue abdominale")
+        case "trap bar": String(localized: "Trap bar")
+        default: capitalised(english)
+        }
+    }
+
+    private static func capitalised(_ text: String) -> String {
+        text.prefix(1).uppercased() + text.dropFirst()
     }
 }

@@ -282,13 +282,13 @@ glyph), its name and « 1 sur 3 séries » (`GuidedStrengthReadout.setsLine`) wi
 (the sheet, « Compter en durée / en répétitions » for the sets still to do, « Retirer la dernière
 série »), then each set as a line — its number in a ring, « 12 rép. » and « 10 kg » each in a hairline
 capsule typed in place (« 45 s » and a ▶ for a hold, « /côté » for a set covering both sides), the
-tick — and at its foot « Progression » (an exercise already logged) and « Ajouter une série ». No
+tick — and at its foot « Évolution » (an exercise already logged) and « Ajouter une série ». No
 stepper card, no « Valider la série », no per-exercise page to type the sets on. The name opens
 `ExerciseGuidePage`: « Guide » — the catalog's GIF, « Voir l'exécution sur YouTube » (a search for
 « <name> technique », `ExerciseGuideReadout`), the figures strip (last time, best, today's volume:
-the load lives here), « Consigne du coach », « Note épinglée » (the standing note, ADR-146) — and
-« Historique » (`ExerciseProgressionContent`, also the body of `ExerciseProgressionPage`). The catalog
-carries no written instructions, so the sheet has none. A list of exercises (the picker) says
+the load lives here), « Consigne du coach », « Note épinglée » (the standing note, ADR-146) — then
+« À propos » and « Évolution » (below). The catalog carries no written instructions, so the sheet
+has none. A list of exercises (the picker) says
 « Dernière fois 3 × 8 » without the load (`StrengthHistoryReadout.lastSets`). The « … » ends on
 « Abandonner », one word with its glyph drawn red (a menu renders a template image in its own tint).
 
@@ -305,3 +305,23 @@ filler words dropped (« poids du corps », « de »…), an English phrase coun
 covering at least 60 % of both kept — the web resolver's threshold. « Abdos jackknife » finds the
 jackknife sit-up, « Pont fessier » the glute bridge. The coach still writes free names: making the
 generator name exercises from the catalog is a server task.
+
+**À propos, Évolution, the end of a session (the athlete's call, 2026-11-28).** The sheet's tabs are
+« Guide », « À propos » and « Évolution ». « À propos » names the target muscle (« Principal »), its
+zone and the equipment, in French (`ExerciseAnatomy`), from the dataset's words the web's catalog
+carries, copied into the bundled index by `scripts/exercise-details.py`; the equipment also stands
+under the name. No body map: the catalog draws none. « Évolution » (`ExerciseProgressionContent`)
+draws one figure a day, chosen for the exercise (`ExerciseProgressionReadout.measure`): the
+estimated one-rep max for a loaded exercise (Epley, load × (1 + reps / 30), the day's best set), so
+a day of 80 kg × 3 reads below a day of 70 kg × 12 — the best load alone drew noise; the best set's
+repetitions for an exercise never loaded; the longest hold for a hold. « Séances » lists the days'
+sets under the curve. Ending a session asks « Comment s'est passée la séance ? » on two
+`CliniqueScale` tracks, effort perçu with what the level means in repetitions left
+(`GuidedStrengthReadout.effortMeaning`) and ressenti — as the activity's own sheet does — with
+« Enregistrer la séance » docked. Saved, the session shows its recap (`GuidedStrengthRecap`): the
+« Séance enregistrée » seal arriving once, the name and when, duration / sets / reps / volume /
+effort two a row between hairlines, each exercise with its sets folded (« 3 × 8 · 20 kg »), and
+« Voir l'activité » (closes, then `ShellRouter.openActivity`) beside « Terminé ». The screen behind
+is told (its toast, its refresh) only when the recap closes. The inspiration's radial gauge and
+confetti are not built: the root rules forbid a radial gauge as a hero and animate meaning only.
+

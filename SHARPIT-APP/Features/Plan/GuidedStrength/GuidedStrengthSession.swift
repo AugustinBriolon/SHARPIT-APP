@@ -458,6 +458,22 @@ nonisolated enum GuidedStrengthReadout {
         return "\(total) \(noun)"
     }
 
+    /// What an effort level means for a strength session, under the scale: told by the
+    /// repetitions left at the end of the sets, as a lifter reads it. Nil before a level is chosen.
+    static func effortMeaning(_ rpe: Int?) -> String? {
+        guard let rpe else { return nil }
+        return switch rpe {
+        case 1: String(localized: "Une séance d’entretien, sans effort ressenti.")
+        case 2, 3: String(localized: "De la marge sur chaque série.")
+        case 4, 5: String(localized: "Les séries passent, la fin se sent.")
+        case 6: String(localized: "Les dernières répétitions demandent un effort.")
+        case 7, 8: String(localized: "Deux ou trois répétitions en réserve à la fin des séries.")
+        case 9: String(localized: "Une répétition en réserve, pas plus.")
+        case 10: String(localized: "Plus aucune répétition possible.")
+        default: nil
+        }
+    }
+
     /// What the overview's button says: nothing to end before a first set, the session to end
     /// when it is run live, the exercises to hand back when it is logged by hand.
     static func finishTitle(done: Int, isLogging: Bool) -> String {
@@ -493,3 +509,63 @@ extension PlannedSessionFormat {
         return String(format: "%d:%02d", minutes, secs)
     }
 }
+
+/// A saved session read back on its recap: its length, what was done, and each exercise's sets
+/// folded as the history writes them (« 3 × 8 · 20 kg »). Only the sets ticked count.
+struct GuidedStrengthRecap {
+    struct Exercise: Identifiable {
+        let name: String
+        let catalogId: String?
+        let lines: [String]
+        var id: String { name }
+    }
+
+    /// « 42 min », « 1 h 05 »
+    let duration: String
+    /// « 28 nov. · 11:36 »
+    let when: String
+    let sets: Int
+    let reps: Int
+    let volumeKg: Double
+    let exercises: [Exercise]
+
+    init(session: GuidedStrengthSession, endedAt: Date) {
+        let done = session.targets.filter(\.isDone)
+        duration = Self.length(Int(endedAt.timeIntervalSince(session.startedAt)))
+        when = "\(session.startedAt.formatted(.dateTime.day().month(.abbreviated))) · \(session.startedAt.formatted(date: .omitted, time: .shortened))"
+        sets = done.count
+        reps = done.filter { !$0.isHold }.reduce(0) { $0 + $1.loggedReps }
+        volumeKg = done.filter { !$0.isHold }.reduce(0) { $0 + Double($1.loggedReps) * ($1.loggedWeightKg ?? 0) }
+        exercises = session.exerciseGroups.compactMap { group in
+            let sets = group.indices.map { session.targets[$0] }.filter(\.isDone)
+            guard !sets.isEmpty else { return nil }
+            return Exercise(name: group.name, catalogId: group.exerciseCatalogId, lines: Self.lines(sets))
+        }
+    }
+
+    /// Consecutive sets alike folded into one block: 8, 8, 8 at 20 kg then 6 at 22,5 kg reads
+    /// « 3 × 8 · 20 kg » over « 1 × 6 · 22,5 kg ».
+    static func lines(_ sets: [GuidedStrengthSetTarget]) -> [String] {
+        var blocks: [(count: Int, reps: Int, kg: Double?, seconds: Int?)] = []
+        for set in sets {
+            let reps = set.isHold ? 1 : set.loggedReps
+            let kg = set.isHold ? nil : set.loggedWeightKg
+            let seconds = set.isHold ? set.loggedDurationSec : nil
+            if let last = blocks.last, last.reps == reps, last.kg == kg, last.seconds == seconds {
+                blocks[blocks.count - 1].count += 1
+            } else {
+                blocks.append((1, reps, kg, seconds))
+            }
+        }
+        return blocks.map {
+            StrengthHistoryReadout.block(sets: $0.count, reps: $0.reps, weightKg: $0.kg, durationSec: $0.seconds)
+        }
+    }
+
+    static func length(_ seconds: Int) -> String {
+        let minutes = max(seconds, 0) / 60
+        if minutes < 60 { return String(localized: "\(max(minutes, 1)) min") }
+        return String(format: "%d h %02d", minutes / 60, minutes % 60)
+    }
+}
+

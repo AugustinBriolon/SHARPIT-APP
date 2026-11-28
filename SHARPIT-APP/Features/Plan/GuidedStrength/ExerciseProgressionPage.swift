@@ -34,7 +34,7 @@ struct ExerciseProgressionPage: View {
             .padding(.horizontal, SharpitSpacing.pageInset)
             .padding(.vertical, SharpitSpacing.md)
         }
-        .navigationTitle("Progression")
+        .navigationTitle("Évolution")
     }
 }
 
@@ -82,13 +82,34 @@ struct ExerciseProgressionContent: View {
     private func content(_ sessions: [V1ExerciseSession]) -> some View {
         let points = ExerciseProgressionReadout.points(sessions)
         return VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            if let change = ExerciseProgressionReadout.change(points) {
-                Text(change)
-                    .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout, digits: true))
-                    .foregroundStyle(SharpitColor.slate)
+            if let first = points.first {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(first.measure.title)
+                        .font(SharpitTypography.sectionTitle)
+                        .tracking(SharpitTypography.sectionTitleTracking)
+                        .foregroundStyle(SharpitColor.foreground)
+                        .accessibilityAddTraits(.isHeader)
+                    if let change = ExerciseProgressionReadout.change(points) {
+                        Text(change)
+                            .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout, digits: true))
+                            .foregroundStyle(SharpitColor.slate)
+                    } else if let only = points.last {
+                        Text(ExerciseProgressionReadout.figure(only))
+                            .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout, digits: true))
+                            .foregroundStyle(SharpitColor.slate)
+                    }
+                }
             }
             if points.count >= 2 {
                 chart(points)
+            }
+            if !sessions.isEmpty {
+                Text("Séances")
+                    .font(SharpitTypography.sectionTitle)
+                    .tracking(SharpitTypography.sectionTitleTracking)
+                    .foregroundStyle(SharpitColor.foreground)
+                    .padding(.top, SharpitSpacing.xs)
+                    .accessibilityAddTraits(.isHeader)
             }
             if sessions.isEmpty {
                 Text("Aucune série enregistrée sur cet exercice.")
@@ -108,10 +129,10 @@ struct ExerciseProgressionContent: View {
 
     private func chart(_ points: [ExerciseProgressionReadout.Point]) -> some View {
         Chart(points) { point in
-            LineMark(x: .value("Jour", point.date), y: .value("Meilleur", point.value))
+            LineMark(x: .value("Jour", point.date), y: .value(point.measure.title, point.value))
                 .foregroundStyle(SharpitChartStyle.line)
                 .lineStyle(StrokeStyle(lineWidth: SharpitChartStyle.lineWidth, lineCap: .round, lineJoin: .round))
-            PointMark(x: .value("Jour", point.date), y: .value("Meilleur", point.value))
+            PointMark(x: .value("Jour", point.date), y: .value(point.measure.title, point.value))
                 .symbol { SharpitChartPoint() }
         }
         // A load read from zero flattens every change; the points keep clear of the edges.
@@ -119,7 +140,7 @@ struct ExerciseProgressionContent: View {
         .chartXScale(range: .plotDimension(padding: 12))
         .sharpitChartAxes()
         .frame(height: 180)
-        .accessibilityLabel(ExerciseProgressionReadout.change(points) ?? String(localized: "Progression"))
+        .accessibilityLabel(ExerciseProgressionReadout.change(points) ?? String(localized: "Évolution"))
     }
 
     private func sessionRow(_ session: V1ExerciseSession) -> some View {
@@ -152,30 +173,73 @@ struct ExerciseProgressionContent: View {
     }
 }
 
-/// How an exercise's days read on its progression page.
+/// How an exercise's days read on its « Évolution ».
+///
+/// One figure a day, chosen once for the exercise (the athlete's call, 2026-11-28): the best load
+/// alone drew a day of 80 kg × 5 above a day of 70 kg × 10 that was the stronger one, and the curve
+/// read as noise. A loaded exercise is drawn by its estimated one-rep max — Epley, load × (1 + reps
+/// / 30), the day's best set — which puts heavy-and-few and lighter-and-more on one scale. An
+/// exercise never loaded is drawn by its best set's repetitions, a hold by its longest hold. The
+/// sets themselves stay listed under the curve, as done.
 enum ExerciseProgressionReadout {
-    struct Point: Identifiable, Equatable {
-        let date: Date
-        let value: Double
-        let isHold: Bool
-        var id: Date { date }
-    }
+    enum Measure: Equatable {
+        case estimatedMax
+        case reps
+        case hold
 
-    /// One point a day: the best load, or the longest hold for an exercise never loaded.
-    static func points(_ sessions: [V1ExerciseSession]) -> [Point] {
-        let loaded = sessions.contains { ($0.bestWeightKg ?? 0) > 0 }
-        return sessions.compactMap { session in
-            guard let date = APIDate.day(session.date) else { return nil }
-            if loaded {
-                guard let kg = session.bestWeightKg, kg > 0 else { return nil }
-                return Point(date: date, value: kg, isHold: false)
+        /// The curve's name, over it.
+        var title: String {
+            switch self {
+            case .estimatedMax: String(localized: "1 RM estimé")
+            case .reps: String(localized: "Meilleure série")
+            case .hold: String(localized: "Maintien le plus long")
             }
-            guard let seconds = session.bestDurationSec, seconds > 0 else { return nil }
-            return Point(date: date, value: Double(seconds), isHold: true)
         }
     }
 
-    /// « 55 kg → 65 kg depuis le 1 oct. », nil with fewer than two days to compare.
+    struct Point: Identifiable, Equatable {
+        let date: Date
+        let value: Double
+        let measure: Measure
+        var id: Date { date }
+        var isHold: Bool { measure == .hold }
+    }
+
+    /// What an exercise is drawn by: its one-rep max once any set was loaded, else its reps, else
+    /// its holds.
+    static func measure(_ sessions: [V1ExerciseSession]) -> Measure {
+        let blocks = sessions.flatMap(\.blocks)
+        if blocks.contains(where: { ($0.weightKg ?? 0) > 0 && $0.reps > 0 }) { return .estimatedMax }
+        if blocks.contains(where: { $0.reps > 1 && ($0.durationSec ?? 0) <= 0 }) { return .reps }
+        return .hold
+    }
+
+    /// Epley's estimate; a single repetition is its own maximum.
+    static func estimatedMax(kg: Double, reps: Int) -> Double {
+        reps <= 1 ? kg : kg * (1 + Double(reps) / 30)
+    }
+
+    /// One point a day, in the exercise's measure; a day without it (unloaded, untimed) is left out.
+    static func points(_ sessions: [V1ExerciseSession]) -> [Point] {
+        let measure = measure(sessions)
+        return sessions.compactMap { session in
+            guard let date = APIDate.day(session.date) else { return nil }
+            let value: Double? = switch measure {
+            case .estimatedMax:
+                session.blocks.compactMap { block in
+                    guard let kg = block.weightKg, kg > 0, block.reps > 0 else { return nil }
+                    return estimatedMax(kg: kg, reps: block.reps)
+                }.max()
+            case .reps:
+                session.blocks.filter { ($0.durationSec ?? 0) <= 0 }.map { Double($0.reps) }.filter { $0 > 0 }.max()
+            case .hold:
+                session.bestDurationSec.flatMap { $0 > 0 ? Double($0) : nil }
+            }
+            return value.map { Point(date: date, value: $0, measure: measure) }
+        }
+    }
+
+    /// « 62 kg → 70 kg depuis le 1 oct. », nil with fewer than two days to compare.
     static func change(_ points: [Point]) -> String? {
         guard let first = points.first, let last = points.last, points.count >= 2 else { return nil }
         let since = first.date.formatted(.dateTime.day().month(.abbreviated))
@@ -183,7 +247,11 @@ enum ExerciseProgressionReadout {
     }
 
     static func figure(_ point: Point) -> String {
-        point.isHold ? PlannedSessionFormat.durationSeconds(Int(point.value)) : GuidedStrengthSetTarget.kilograms(point.value)
+        switch point.measure {
+        case .estimatedMax: GuidedStrengthSetTarget.kilograms(point.value.rounded())
+        case .reps: String(localized: "\(Int(point.value)) rép.")
+        case .hold: PlannedSessionFormat.durationSeconds(Int(point.value))
+        }
     }
 
     /// « 8 nov. »
